@@ -1,0 +1,62 @@
+# Virtual environment
+venv/
+.env/
+.venv/
+
+# Compiled files
+__pycache__/
+*.py[cod]
+
+# System-specific files
+.DS_Store
+Thumbs.db
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# Logs and databases
+*.log
+*.db
+*.sqlite3
+
+# Flask instance folder
+instance/
+
+# Configuration files
+config.py
+.env
+.flaskenv
+
+# Static and media files
+staticfiles/
+mediafiles/
+uploads/
+
+# Dependency management
+Pipfile.lock
+.conda/
+
+# Test and build artifacts
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Docker
+.env.docker
+.dockerignore
+
+# Deployment
+deploy/
+
+# MySQL specific
+*.sql
+*.sql.gz
+dumps/
+backups/
+db_config.py
