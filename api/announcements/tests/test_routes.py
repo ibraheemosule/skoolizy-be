@@ -8,36 +8,35 @@ def set_testing_env(monkeypatch):
     monkeypatch.setenv("ENV", "testing")
 
 def test_get_data(client, mocker):
-    pass
 
-    # mock_cursor = MagicMock()
-    # mock_cursor.fetchall.return_value = [
-    #     {
-    #     "title": "testing",
-    #     "event_time": "05:00:00",
-    #     "event_start_date": "2020-05-23",
-    #     "event_end_date": "2020-05-23",
-    #     "type": "multi_event",
-    #     "message": "here is anotherorking"
-    #     }
-    # ]
+    mock_cursor = MagicMock()
+    mock_cursor.fetchall.return_value = [
+        {
+        "title": "testing",
+        "event_time": "05:00:00",
+        "event_start_date": "2020-05-23",
+        "event_end_date": "2020-05-23",
+        "type": "multi_event",
+        "message": "here is anotherorking"
+        }
+    ]
 
-    # mocker.patch('app.mysql.connection.cursor', return_value=mock_cursor)
+    mocker.patch('app.mysql.connection.cursor', return_value=mock_cursor)
 
-    # response = client.get('/announcements')
-    # data = response.get_json()
+    response = client.get('/announcements')
+    data = response.get_json()
 
-    # assert response.status_code == 200
-    # assert data == [
-    #     {
-    #     "title": "testing",
-    #     "event_time": "05:00:00",
-    #     "event_start_date": "2020-05-23",
-    #     "event_end_date": "2020-05-23",
-    #     "type": "multi_event",
-    #     "message": "here is anotherorking"
-    #     }
-    # ]
+    assert response.status_code == 200
+    assert data == [
+        {
+        "title": "testing",
+        "event_time": "05:00:00",
+        "event_start_date": "2020-05-23",
+        "event_end_date": "2020-05-23",
+        "type": "multi_event",
+        "message": "here is anotherorking"
+        }
+    ]
 
 # def test_insert_data(client, mocker):
 #     mock_cursor = MagicMock()
