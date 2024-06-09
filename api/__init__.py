@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_mysqldb import MySQL
-from api.config import Config, DevelopmentConfig, TestingConfig, ProductionConfig
+from api.setup import Config, DevelopmentConfig, TestingConfig
 import os
 from dotenv import load_dotenv
 
@@ -14,8 +14,6 @@ if env == 'development':
     app.config.from_object(DevelopmentConfig)
 elif env == 'testing':
     app.config.from_object(TestingConfig)
-elif env == 'production':
-    app.config.from_object(ProductionConfig)
 else:
     app.config.from_object(Config)
 
