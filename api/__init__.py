@@ -2,7 +2,6 @@ from flask import Flask
 from flask_mysqldb import MySQL
 from api.setup import Config, DevelopmentConfig, TestingConfig
 import os
-from dotenv import load_dotenv
 
 app = Flask(__name__)
 

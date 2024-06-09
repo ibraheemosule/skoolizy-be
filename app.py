@@ -3,16 +3,12 @@ from flask_mysqldb import MySQL
 from api.announcements.routes import announcements_bp
 from api.schema_config import load_schemas
 from flask_cors import CORS
+from setup_env import config
 
 app = Flask(__name__)
 CORS(app)
 
-app.config['MYSQL_HOST'] = '127.0.0.1'
-app.config['MYSQL_PORT'] = 3306
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'LIVERpool55.'
-app.config['MYSQL_DB'] = 'skoolizy'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+app.config.from_object(config)
 
 mysql = MySQL(app)
 
