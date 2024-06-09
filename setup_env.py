@@ -3,11 +3,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-class Config:
+class __Config:
     
     APP = os.getenv('FLASK_APP')
-    PORT = os.getenv('FLASK_PORT')
-    FLASK_RUN_PORT = os.getenv('FLASK_RUN_PORT')
+    PORT = int(os.getenv('FLASK_RUN_PORT'))
     MYSQL_HOST = os.getenv('FLASK_MYSQL_HOST')
     MYSQL_PORT = int(os.getenv('FLASK_MYSQL_PORT'))
     MYSQL_USER = os.getenv('FLASK_MYSQL_USER')
@@ -17,18 +16,18 @@ class Config:
     DEBUG = os.getenv('FLASK_DEBUG')
     TESTING = os.getenv('FLASK_TESTING')
 
-class DevelopmentConfig(Config):
+class __DevelopmentConfig(__Config):
     DEBUG = True
     MYSQL_DB = os.getenv('FLASK_MYSQL_DB_DEV')
 
-class TestingConfig(Config):
+class __TestingConfig(__Config):
     MYSQL_DB = os.getenv('FLASK_MYSQL_DB_TEST')
     TESTING = True
 
 config = {
-    'production': Config,
-    'development': DevelopmentConfig,
-    'testing': TestingConfig,
+    'production': __Config,
+    'development': __DevelopmentConfig,
+    'testing': __TestingConfig,
 }[os.getenv('FLASK_ENV', 'development')]
 
 __all__ = ['config']

@@ -1,6 +1,5 @@
 from typing import List, Dict
 from flask import Response, json, request, jsonify, Request
-from api import mysql
 from .validations import announcements_validation
 from .data_types import TAnnouncementPayload
 from utils.custom_error import CustomError
@@ -8,6 +7,7 @@ from utils.custom_error import CustomError
 
 class Announcements:
     def get(req: Request) -> Response:
+        from app import mysql
         cursor = mysql.connection.cursor()
         cursor.execute("SELECT * FROM announcements")
         data: List[Dict[str, int | str]] = cursor.fetchall()
@@ -17,6 +17,7 @@ class Announcements:
 
     def post(req: Request) -> Response:
         try:
+            from app import mysql 
             data: TAnnouncementPayload = request.json
             announcements_validation(data)
             cursor = mysql.connection.cursor()
