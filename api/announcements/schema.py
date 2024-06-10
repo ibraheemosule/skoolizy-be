@@ -4,13 +4,15 @@ announcements_schema = '''
                         id INT NOT NULL AUTO_INCREMENT,
                         PRIMARY KEY (id),
 
+                        recipient SET('all', 'parents', 'teachers', 'students') NOT NULL DEFAULT ('all'),
+
                         date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
                         title VARCHAR(255) NOT NULL,
 
                         type ENUM('memo', 'single_event', 'multi_event') NOT NULL,
 
-                        message VARCHAR(255) NOT NULL,
+                        message VARCHAR(255),
 
                         event_start_date DATE DEFAULT NULL,
 
@@ -28,6 +30,10 @@ announcements_schema = '''
 
                         CONSTRAINT check_memo_type CHECK (
                         type != 'memo' OR (event_start_date IS NULL AND event_end_date IS NULL AND event_time IS NULL)
+                        ),
+
+                         CONSTRAINT check_memo_has_message CHECK (
+                        type != 'memo' OR (message IS NOT NULL)
                         )
                         )
                         '''

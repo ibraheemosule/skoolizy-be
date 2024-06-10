@@ -27,6 +27,6 @@ class Announcements:
             )
             mysql.connection.commit()
             cursor.close()
-            return jsonify({'message': 'Data inserted successfully'}), 200
+            return jsonify({'message': 'Data inserted successfully'}), 201
         except  CustomError as e:
             return jsonify({'error': str(e)}), e.status_code

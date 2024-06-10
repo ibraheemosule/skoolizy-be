@@ -1,85 +1,55 @@
 import pytest
-from unittest.mock import patch, MagicMock
-from app import app
+from unittest.mock import MagicMock, patch
+from app import app as flask_app
+from . import mock_data as mk
 
+def test_get_data(client):
+    # Create a MagicMock for the cursor and set up its return value
+    mock_cursor = MagicMock()
+    mock_cursor.fetchall.return_value = [mk.ANNOUNCEMENT_PAYLOAD]
+    # Ensure that the application context is active
+    with flask_app.app_context():
+        # Patch the entire `app.mysql` module
+        with patch('app.mysql', autospec=True) as mock_mysql:
+            # Configure the mock to return the mock cursor
+            mock_mysql.connection.cursor.return_value = mock_cursor
+            # Make the request to the client
+            response = client.get('/announcements')
+            data = response.get_json()
 
-@pytest.fixture(autouse=True)
-def set_testing_env(monkeypatch):
-    monkeypatch.setenv("ENV", "testing")
+            assert response.status_code == 200
+            assert data == [mk.ANNOUNCEMENT_PAYLOAD]
 
-def test_get_data(client, mocker):
+@pytest.mark.parametrize("input_data, expected_status, expected_message", [
+    mk.POST_NO_TYPE_IN_PAYLOAD_403,
+    mk.POST_MULTI_EVENT_WITH_VALID_PAYLOAD_200,
+    mk.POST_MULTI_EVENT_EVENT_TIME_IN_PAYLOAD_403,
+    mk.POST_MULTI_EVENT_NO_MESSAGE_IN_PAYLOAD_201,
+    mk.POST_MULTI_EVENT_NO_EVENT_START_DATE_IN_PAYLOAD_403,
+    mk.POST_MULTI_EVENT_NO_EVENT_END_DATE_IN_PAYLOAD_403,
+    mk.POST_MULTI_EVENT_NO_TITLE_IN_PAYLOAD_403,
+    mk.POST_SINGLE_EVENT_WITH_VALID_PAYLOAD_201,
+    mk.POST_SINGLE_EVENT_EVENT_END_DATE_IN_PAYLOAD_403,
+    mk.POST_SINGLE_EVENT_NO_MESSAGE_IN_PAYLOAD_201,
+    mk.POST_SINGLE_EVENT_NO_EVENT_START_DATE_IN_PAYLOAD_403,
+    mk.POST_SINGLE_EVENT_NO_EVENT_TIME_IN_PAYLOAD_403,
+    mk.POST_SINGLE_EVENT_NO_TITLE_IN_PAYLOAD_403,
+    mk.POST_MEMO_WITH_VALID_PAYLOAD_201,
+    mk.POST_MEMO_EVENT_END_DATE_IN_PAYLOAD_403,
+    mk.POST_MEMO_EVENT_START_DATE_IN_PAYLOAD_403
+
+    ])
+def test_post_data(client, input_data, expected_status, expected_message):
 
     mock_cursor = MagicMock()
-    mock_cursor.fetchall.return_value = [
-        {
-        "title": "testing",
-        "event_time": "05:00:00",
-        "event_start_date": "2020-05-23",
-        "event_end_date": "2020-05-23",
-        "type": "multi_event",
-        "message": "here is anotherorking"
-        }
-    ]
+    mock_cursor.execute.return_value = None
 
-    mocker.patch('app.mysql.connection.cursor', return_value=mock_cursor)
+    # Ensure that the application context is active
+    with flask_app.app_context():
+        with patch('app.mysql', autospec=True) as mock_mysql:
+            mock_mysql.connection.cursor.return_value = mock_cursor
 
-    response = client.get('/announcements')
-    data = response.get_json()
+            response = client.post('/announcements', json=input_data)
 
-    assert response.status_code == 200
-    assert data == [
-        {
-        "title": "testing",
-        "event_time": "05:00:00",
-        "event_start_date": "2020-05-23",
-        "event_end_date": "2020-05-23",
-        "type": "multi_event",
-        "message": "here is anotherorking"
-        }
-    ]
-
-# def test_insert_data(client, mocker):
-#     mock_cursor = MagicMock()
-#     mocker.patch('app.mysql.connection.cursor', return_value=mock_cursor)
-
-#     test_data = {
-#         'title': 'Test Title',
-#         'type': 'memo',
-#         'message': 'Test Message',
-#         'date': '2023-06-08',
-#         'time': '12:00:00'
-#     }
-
-#     response = client.post('/announcements', json=test_data)
-#     data = response.get_json()
-
-#     assert response.status_code == 200
-#     assert data['message'] == 'Data inserted successfully'
-
-#     mock_cursor.execute.assert_called_once_with(
-#         '''INSERT INTO announcements (title, type, message, date, time ) VALUES (%s, %s, %s, %s, %s)''', 
-#         ('Test Title', 'memo', 'Test Message', '2023-06-08', '12:00:00')
-#     )
-#     mock_cursor.close.assert_called_once()
-
-# def test_insert_data_fail(client, mocker):
-#     mock_cursor = MagicMock()
-#     mock_cursor.execute.side_effect = Exception("Database error")
-#     mocker.patch('app.mysql.connection.cursor', return_value=mock_cursor)
-
-#     test_data = {
-#         'title': 'Test Title',
-#         'type': 'memo',
-#         'message': 'Test Message',
-#         'date': '2023-06-08',
-#         'time': '12:00:00'
-#     }
-
-#     response = client.post('/data', json=test_data)
-#     data = response.get_json()
-
-#     assert response.status_code == 500
-#     assert 'error' in data
-#     assert data['error'] == 'Database error'
-
-#     mock_cursor.close.assert_called_once()
+            assert response.status_code == expected_status
+            assert response.json == expected_message

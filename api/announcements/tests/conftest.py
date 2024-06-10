@@ -1,21 +1,17 @@
 import pytest
-from flask import Flask
-from app import app
-from api.schema_config import load_schemas
-from setup_env import config
+from app import app as flask_app
 
-@pytest.fixture(scope='module')
-def client():
+@pytest.fixture
+def app():
+    flask_app.config['TESTING'] = True
+    flask_app.config['MYSQL_DB'] = 'skoolizy_test'
+    flask_app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+    return flask_app
 
-    with app.app_context():  # Set up application context
-        from app import mysql
-        load_schemas(app, mysql)  # Ensure the test database is clean before tests
+@pytest.fixture
+def client(app):
+    return app.test_client()
 
-        with app.test_client() as client:
-            yield client
-
-@pytest.fixture(scope='function', autouse=True)
-def clean_db():
-    with app.app_context():  # Set up application context
-        from app import mysql
-        load_schemas(app, mysql)
+@pytest.fixture
+def runner(app):
+    return app.test_cli_runner()
