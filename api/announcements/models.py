@@ -22,8 +22,8 @@ class Announcements:
             announcements_validation(data)
             cursor = mysql.connection.cursor()
             cursor.execute(
-                '''INSERT INTO announcements (title, type, message, event_start_date, event_end_date, event_time) VALUES (%s, %s, %s, %s, %s, %s)''', 
-                (data.get('title'), data.get('type'), data.get('message'), data.get('event_start_date'), data.get('event_end_date'), data.get('event_time'))
+                '''INSERT INTO announcements (recipient, title, type, message, event_start_date, event_end_date, event_time) VALUES (%s, %s, %s, %s, %s, %s, %s)''', 
+                (data.get('recipient', 'all'), data.get('title'), data.get('type'), data.get('message'), data.get('event_start_date'), data.get('event_end_date'), data.get('event_time'))
             )
             mysql.connection.commit()
             cursor.close()

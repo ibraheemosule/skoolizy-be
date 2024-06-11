@@ -4,7 +4,7 @@ announcements_schema = '''
                         id INT NOT NULL AUTO_INCREMENT,
                         PRIMARY KEY (id),
 
-                        recipient SET('all', 'parents', 'teachers', 'students') NOT NULL DEFAULT ('all'),
+                        recipient ENUM('all', 'parents', 'teachers', 'students') DEFAULT 'all',
 
                         date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

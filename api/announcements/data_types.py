@@ -1,7 +1,8 @@
-from typing import Any, TypedDict, Literal, Optional
+from typing import Any, TypedDict, Literal, Optional, List
 
 class TAnnouncement(TypedDict):
     id: int
+    recipient: Literal['all', 'parents', 'teachers', 'students']
     date_created: str
     title: str
     type: Literal['memo','single_event','multi_event']

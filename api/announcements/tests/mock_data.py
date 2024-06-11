@@ -16,6 +16,11 @@ POST_NO_TYPE_IN_PAYLOAD_403 =  (
     403, {"error": "type is required"}
 )
 
+POST_INVALID_TYPE_IN_PAYLOAD_403 =  (
+    {**__MULTI_EVENT_PAYLOAD, 'type': 'invalid_type'},
+    403, {"error": "type should be one of (all, parents, teachers, students)"}
+)
+
 POST_MULTI_EVENT_WITH_VALID_PAYLOAD_200 = (
     __MULTI_EVENT_PAYLOAD,
     201, __success_response

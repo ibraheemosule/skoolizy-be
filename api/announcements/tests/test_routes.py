@@ -22,6 +22,7 @@ def test_get_data(client):
 
 @pytest.mark.parametrize("input_data, expected_status, expected_message", [
     mk.POST_NO_TYPE_IN_PAYLOAD_403,
+    mk.POST_INVALID_TYPE_IN_PAYLOAD_403,
     mk.POST_MULTI_EVENT_WITH_VALID_PAYLOAD_200,
     mk.POST_MULTI_EVENT_EVENT_TIME_IN_PAYLOAD_403,
     mk.POST_MULTI_EVENT_NO_MESSAGE_IN_PAYLOAD_201,
