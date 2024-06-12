@@ -1,6 +1,6 @@
 from flask_mysqldb import MySQL
 from flask import Flask
-from api.announcements.schema import announcements_schema
+from api.announcements.models import announcements_schema
 import os
 
 def load_schemas(app: Flask, mysql: MySQL) -> None:

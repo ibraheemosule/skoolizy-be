@@ -1,5 +1,5 @@
 from flask import Blueprint
-from .models import Announcements
+from .controllers import Announcements
 
 announcements = Announcements()
 

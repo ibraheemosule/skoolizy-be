@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List
 from flask import Response, json, request, jsonify, Request
 from .validations import announcements_validation
 from .data_types import TAnnouncementPayload

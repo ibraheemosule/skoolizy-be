@@ -1,4 +1,3 @@
-# models.py
 from sqlalchemy import Enum, String, Time, Date, Integer, Text, TIMESTAMP, func, CheckConstraint
 from db import db
 
