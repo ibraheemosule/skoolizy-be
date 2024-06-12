@@ -11,9 +11,8 @@ CORS(app)
 app.config.from_object(config)
 
 mysql = MySQL(app)
-
+load_schemas(app, mysql)
 app.register_blueprint(announcements_bp)
 
 if __name__ == '__main__':
-    load_schemas(app, mysql)
     app.run(debug=app.config.get('DEBUG', False), port=app.config.get('PORT', 5000))
