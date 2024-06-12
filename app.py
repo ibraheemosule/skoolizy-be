@@ -1,19 +1,19 @@
 from flask import Flask
-from flask_mysqldb import MySQL
+from flask_migrate import Migrate
 from api.announcements.routes import announcements_bp
-from api.schema_config import load_schemas
 from flask_cors import CORS
 from setup_env import config
+from db import db
 
 app = Flask(__name__)
 
 CORS(app)
 app.config.from_object(config)
 
-mysql = MySQL(app)
+db.init_app(app)
+migrate = Migrate(app, db)
 
 app.register_blueprint(announcements_bp)
 
 if __name__ == '__main__':
-    load_schemas(app, mysql)
     app.run(debug=app.config.get('DEBUG', False), port=app.config.get('PORT', 5000))

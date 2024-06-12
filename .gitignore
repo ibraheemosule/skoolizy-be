@@ -19,6 +19,7 @@ Thumbs.db
 *.iml
 *.sublime-project
 *.sublime-workspace
+coverage
 
 # Logs and databases
 *.log
@@ -62,3 +63,6 @@ deploy/
 dumps/
 backups/
 db_config.py
+
+# Ignore SQLAlchemy migration files
+/migrations/
