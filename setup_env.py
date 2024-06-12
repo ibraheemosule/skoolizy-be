@@ -14,8 +14,8 @@ class __DevelopmentConfig(__Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI =  os.getenv('FLASK_DB_URI') +  os.getenv('FLASK_MYSQL_DB_DEV')
 
-class TestingConfig(__Config):
-    SQLALCHEMY_DATABASE_URI =  os.getenv('FLASK_DB_URI') +  os.getenv('FLASK_MYSQL_DB_TEST')
+class TestingConfig():
+    SQLALCHEMY_DATABASE_URI =  'sqlite:///:memory:'
     TESTING = True
 
 config = __DevelopmentConfig if os.getenv('FLASK_ENV') == 'development' else __Config

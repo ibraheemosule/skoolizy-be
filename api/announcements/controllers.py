@@ -9,8 +9,7 @@ class Announcements:
     def get(req: Request) -> Response:
         announcements: List[Announcement] =  Announcement.query.all()
         data = [announcement.to_dict() for announcement in announcements]
-        res = json.dumps(data, indent=1, sort_keys=True, default=str)
-        return json.loads(res)
+        return jsonify(data), 200
     
 
     def post(req: Request) -> Response:
@@ -18,7 +17,7 @@ class Announcements:
             data: TAnnouncementPayload = request.json
             announcements_validation(data)
 
-            from app import db
+            from db import db
             from .models import Announcement
 
             db.session.add(Announcement(
