@@ -5,8 +5,6 @@ from .data_types import TAnnouncementPayload
 from utils.custom_error import CustomError
 from .schema import Announcement
 
-
-
 class Announcements:
     def get(req: Request) -> Response:
         announcements: List[Announcement] =  Announcement.query.all()
