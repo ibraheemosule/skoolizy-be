@@ -3,7 +3,7 @@ from flask import Response, json, request, jsonify, Request
 from .validations import announcements_validation
 from .data_types import TAnnouncementPayload
 from utils.custom_error import CustomError
-from .schema import Announcement
+from .models import Announcement
 
 class Announcements:
     def get(req: Request) -> Response:
@@ -19,7 +19,7 @@ class Announcements:
             announcements_validation(data)
 
             from app import db
-            from .schema import Announcement
+            from .models import Announcement
 
             db.session.add(Announcement(
             title=data['title'],
