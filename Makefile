@@ -17,5 +17,8 @@ reset-migration:
 	flask db upgrade
 	@echo "Reset migration complete."
 
+update-pkg:
+	pip freeze -r requirements.txt
+
 # Default target
 .DEFAULT_GOAL := run
