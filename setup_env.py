@@ -13,12 +13,11 @@ class __Config:
 class __DevelopmentConfig(__Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI =  os.getenv('FLASK_DB_URI') +  os.getenv('FLASK_MYSQL_DB_DEV')
-
 class TestingConfig():
     SQLALCHEMY_DATABASE_URI =  'sqlite:///:memory:'
     TESTING = True
 
-config = __DevelopmentConfig if os.getenv('FLASK_ENV') == 'development' else __Config
-
+env = os.getenv('FLASK_ENV', 'development')
+config = TestingConfig if env == 'testing' else __DevelopmentConfig if env == 'development' else __Config
 __all__ = ['config', TestingConfig]
 

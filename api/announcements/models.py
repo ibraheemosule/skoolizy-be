@@ -1,5 +1,7 @@
-from sqlalchemy import Enum, String, Time, Date, Integer, Text, TIMESTAMP, func, CheckConstraint
+from sqlalchemy import Enum, String, Time, Date, Integer, TIMESTAMP, func, CheckConstraint
 from db import db
+from sqlalchemy.orm import validates
+import datetime
 
 class Announcement(db.Model):
     __tablename__ = 'announcements'
@@ -45,3 +47,26 @@ class Announcement(db.Model):
             "event_end_date": self.event_end_date.isoformat() if self.event_end_date else None,
             "event_time": self.event_time.isoformat() if self.event_time else None
         }
+    
+    @validates('event_time')
+    def validate_event_time(self, key, value):
+        print(value, '53')
+        if isinstance(value, str):
+            print(value, '55', str)
+            try:
+                time_obj = datetime.datetime.strptime(value, "%H:%M:%S").time()
+            except ValueError as e:
+                print(value, '59', str)
+                raise ValueError(f"Invalid time format: {value}. Expected format is 'HH:MM:SS'. Error: {e}")
+            return time_obj
+        return value
+
+    @validates('event_start_date', 'event_end_date')
+    def validate_event_start_date(self, key, value):
+        if isinstance(value, str):
+            try:
+                date_obj = datetime.datetime.strptime(value, "%Y-%m-%d").date()
+            except ValueError as e:
+                raise ValueError(f"Invalid date format: {value}. Expected format is 'YYYY-MM-DD'. Error: {e}")
+            return date_obj
+        return value
