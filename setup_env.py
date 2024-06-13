@@ -6,6 +6,7 @@ load_dotenv()
 class __Config:
     APP = os.getenv('FLASK_APP')
     PORT = int(os.getenv('FLASK_RUN_PORT'))
+    SQLALCHEMY_ENGINE_OPTIONS = {'pool_recycle' : 280}
     SQLALCHEMY_DATABASE_URI = os.getenv('FLASK_DB_URI') +  os.getenv('FLASK_MYSQL_DB')
     DEBUG = False
     TESTING = False
