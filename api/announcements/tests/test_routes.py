@@ -8,7 +8,8 @@ def test_get_data(client):
     db.session.commit()
 
     response = client.get('/announcements')
-    res = response.json
+    res = response.json['data']
+
 
     assert len(res) == 1, "Invalid response expected"
     assert res[0].get('event_end_date') == str(mk.ANNOUNCEMENT_PAYLOAD['event_end_date']), 'announcement event_end_date mismatch' 
@@ -21,7 +22,7 @@ def test_get_data(client):
 @pytest.mark.parametrize("input_data, expected_status, expected_message", [
     mk.POST_NO_TYPE_IN_PAYLOAD_403,
     mk.POST_INVALID_TYPE_IN_PAYLOAD_403,
-    mk.POST_MULTI_EVENT_WITH_VALID_PAYLOAD_200,
+    mk.POST_MULTI_EVENT_WITH_VALID_PAYLOAD_201,
     mk.POST_MULTI_EVENT_EVENT_TIME_IN_PAYLOAD_403,
     mk.POST_MULTI_EVENT_NO_MESSAGE_IN_PAYLOAD_201,
     mk.POST_MULTI_EVENT_NO_EVENT_START_DATE_IN_PAYLOAD_403,
@@ -36,9 +37,9 @@ def test_get_data(client):
     mk.POST_MEMO_WITH_VALID_PAYLOAD_201,
     mk.POST_MEMO_EVENT_END_DATE_IN_PAYLOAD_403,
     mk.POST_MEMO_EVENT_START_DATE_IN_PAYLOAD_403
-    ])
+])
 def test_post_data(client, input_data, expected_status, expected_message):
-    response = client.post('/announcements', json=input_data)
-
-    assert response.status_code == expected_status
-    assert response.json == expected_message
+    res = client.post('/announcements', json=input_data)
+    print(res.json)
+    assert res.status_code == expected_status
+    assert res.json == expected_message

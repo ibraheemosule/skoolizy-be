@@ -1,10 +1,18 @@
+from datetime import datetime, timedelta
+
+
 __success_response =  {'message': 'Data inserted successfully'}
+
+tomorrow_date = str(datetime.today().date() + timedelta(days=1))
+overmorrow_date = str(datetime.today().date() + timedelta(days=2))
+
+print(str(tomorrow_date))
 
 ANNOUNCEMENT_PAYLOAD = {
     "title": "testing",
     "event_time": "05:00:00",
-    "event_start_date": "2020-05-23",
-    "event_end_date": "2020-05-23",
+    "event_start_date": str(tomorrow_date),
+    "event_end_date": str(overmorrow_date),
     "type": "multi_event",
     "message": "here is another working"
 }
@@ -21,7 +29,7 @@ POST_INVALID_TYPE_IN_PAYLOAD_403 =  (
     403, {"error": "type should be one of (all, parents, teachers, students)"}
 )
 
-POST_MULTI_EVENT_WITH_VALID_PAYLOAD_200 = (
+POST_MULTI_EVENT_WITH_VALID_PAYLOAD_201 = (
     __MULTI_EVENT_PAYLOAD,
     201, __success_response
 )
@@ -43,7 +51,7 @@ POST_MULTI_EVENT_NO_EVENT_START_DATE_IN_PAYLOAD_403 =  (
 
 POST_MULTI_EVENT_NO_EVENT_END_DATE_IN_PAYLOAD_403 =  (
     {k: v for k, v in __MULTI_EVENT_PAYLOAD.items() if k not in ['event_end_date']},
-    403, {"error": "event_end_date is required"}
+    403, {'error': 'event_end_date is required, event_start_date should be an earlier date than event_end_date'}
 )
 
 POST_MULTI_EVENT_NO_TITLE_IN_PAYLOAD_403 =  (
