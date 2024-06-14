@@ -1,4 +1,5 @@
 
+from datetime import datetime, timedelta
 from .data_types import TAnnouncementPayload
 from utils.custom_error import CustomError
 
@@ -14,10 +15,8 @@ def announcements_validation(payload: TAnnouncementPayload):
 
     type = invalid_fields.get(payload.get('type'))
 
-    if payload.get('type') and type is None:
+    if invalid_fields.get(payload.get('type')) is None:
         raise CustomError('type should be one of (all, parents, teachers, students)', 403)
-    elif type is None:
-        raise CustomError('type is required', 403)
     
     for k in keys:
         if k in type.get('invalid_payload', {}):
@@ -25,7 +24,16 @@ def announcements_validation(payload: TAnnouncementPayload):
                 errors.append(f"{k} is an invalid payload")
         elif k not in type.get('optional_payload', {}) and payload.get(k) is None:
             errors.append(f"{k} is required")
+
+    if payload.get('type') != 'memo' and (start_date:=payload.get('event_start_date')):
+        start_date = datetime.strptime(payload.get('event_start_date'), '%Y-%m-%d').date()
+        end_date = datetime.strptime(payload.get('event_end_date'), '%Y-%m-%d').date() if payload.get('event_end_date') else datetime.today().date()
+
+        if payload.get('type') == 'multi_event' and start_date > end_date:
+            errors.append("event_start_date should be an earlier date than event_end_date")
+
+        if start_date <= datetime.today().date():
+            errors.append("event_start_date should be a future day")
     
     if len(errors):
-        print(errors)
         raise CustomError(', '.join(errors), 403)

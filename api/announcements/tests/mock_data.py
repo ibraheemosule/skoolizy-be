@@ -13,7 +13,7 @@ __MULTI_EVENT_PAYLOAD = {k:v for k,v in ANNOUNCEMENT_PAYLOAD.items() if k != 'ev
 
 POST_NO_TYPE_IN_PAYLOAD_403 =  (
     {k: v for k, v in __MULTI_EVENT_PAYLOAD.items() if k not in ['type']},
-    403, {"error": "type is required"}
+    403, {"error": "type should be one of (all, parents, teachers, students)"}
 )
 
 POST_INVALID_TYPE_IN_PAYLOAD_403 =  (

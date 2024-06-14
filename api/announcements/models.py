@@ -50,13 +50,10 @@ class Announcement(db.Model):
     
     @validates('event_time')
     def validate_event_time(self, key, value):
-        print(value, '53')
         if isinstance(value, str):
-            print(value, '55', str)
             try:
                 time_obj = datetime.datetime.strptime(value, "%H:%M:%S").time()
             except ValueError as e:
-                print(value, '59', str)
                 raise ValueError(f"Invalid time format: {value}. Expected format is 'HH:MM:SS'. Error: {e}")
             return time_obj
         return value
