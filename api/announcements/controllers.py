@@ -16,6 +16,8 @@ class Announcements:
             event_days = int(request.args.get("event_days", 0))
             search = request.args.get("search")
             from_date = request.args.get("from_date")
+            page = int(request.args.get('page', 1))
+            per_page = int(request.args.get('per_page', 10))
 
             query = Announcement.query
 
@@ -39,9 +41,8 @@ class Announcements:
                         jsonify({"error": "invalid type: expected ('multi_event', 'single_event', 'memo')"}),
                         400,
                     )
-            print('lol 1')
+
             if type not in ("memo", "single_event") and event_days:
-                print('lol 2')
                 query = query.filter(
                     func.datediff(Announcement.event_end_date, Announcement.event_start_date) == event_days
                 )
@@ -68,10 +69,24 @@ class Announcements:
                         400,
                     )
 
-            announcements: List[Announcement] = query.all()
-            data = [announcement.to_dict() for announcement in announcements]
+            pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+            announcements: List[Announcement] = pagination.items
+            total_items = pagination.total
+            total_pages = pagination.pages
 
-            return jsonify({"data": data}), 200
+            data = [announcement.to_dict() for announcement in announcements]
+            return (
+                jsonify(
+                    {
+                        "data": data,
+                        'per_page': per_page,
+                        'total_items': total_items,
+                        'page': page,
+                        'total_pages': total_pages,
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             return jsonify({"error": str(e)}), 400
