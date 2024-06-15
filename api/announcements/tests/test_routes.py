@@ -81,3 +81,21 @@ def test_delete_data(client, data, expected_status, expected_message):
     response = client.delete('/announcements/1')
     assert response.status_code == expected_status
     assert response.json == expected_message
+
+
+@pytest.mark.parametrize(
+    "data, update_payload, expected_status, expected_message",
+    [
+        mk.UPDATE_MULTI_EVENT_VALID_DATA_200,
+        mk.UPDATE_MULTI_EVENT_END_DATE_EARLIER_THAN_EVENT_START_DATE_DATA_403,
+        mk.UPDATE_SINGLE_EVENT_VALID_DATA_200,
+        mk.UPDATE_SINGLE_EVENT_WITH_PAST_DATE_403,
+    ],
+)
+def test_update_data(client, data, update_payload, expected_status, expected_message):
+    res = client.post("/announcements", json=data)
+    res = client.put("/announcements/1", json=update_payload)
+
+    print(res.json)
+    assert res.status_code == expected_status
+    assert res.json == expected_message

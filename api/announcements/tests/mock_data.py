@@ -5,6 +5,7 @@ __success_response = {"message": "Announcement has been sent"}
 __yesterday = str(datetime.today().date() + timedelta(days=-1))
 __tomorrow = str(datetime.today().date() + timedelta(days=1))
 __overmorrow = str(datetime.today().date() + timedelta(days=2))
+__three_days_from_today = str(datetime.today().date() + timedelta(days=3))
 
 ANNOUNCEMENT_PAYLOAD = {
     "title": "testing",
@@ -180,3 +181,37 @@ DELETE_PAST_SINGLE_EVENT_403 = (
 DELETE_MULTI_EVENT_200 = (__MULTI_EVENT_PAYLOAD, 200, {"message": "Announcement with id-1 has been deleted"})
 
 DELETE_MEMO_403 = (__MEMO_PAYLOAD, 403, {"error": "Cannot delete announcement with id-1 because it is a memo"})
+
+
+UPDATE_MULTI_EVENT_VALID_DATA_200 = (
+    __MULTI_EVENT_PAYLOAD,
+    {
+        'message': 'update',
+        'event_start_date': __overmorrow,
+        'event_end_date': __three_days_from_today,
+        'title': 'here is owkring',
+    },
+    200,
+    {'message': 'Announcement with id-1 has been updated'},
+)
+
+UPDATE_MULTI_EVENT_END_DATE_EARLIER_THAN_EVENT_START_DATE_DATA_403 = (
+    __MULTI_EVENT_PAYLOAD,
+    {'event_start_date': __three_days_from_today},
+    403,
+    {'error': 'event_start_date should be an earlier date than event_end_date'},
+)
+
+UPDATE_SINGLE_EVENT_VALID_DATA_200 = (
+    __SINGLE_EVENT_PAYLOAD,
+    {'message': 'update', 'event_start_date': __three_days_from_today, 'title': 'here is owkring'},
+    200,
+    {'message': 'Announcement with id-1 has been updated'},
+)
+
+UPDATE_SINGLE_EVENT_WITH_PAST_DATE_403 = (
+    __MULTI_EVENT_PAYLOAD,
+    {'event_start_date': __yesterday},
+    403,
+    {'error': 'event_start_date should be a future date'},
+)

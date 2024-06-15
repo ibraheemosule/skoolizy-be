@@ -47,7 +47,7 @@ def announcements_validation(payload: TAnnouncementPayload):
             errors.append("event_start_date should be an earlier date than event_end_date")
 
         if start_date <= datetime.today().date():
-            errors.append("event_start_date should be a future day")
+            errors.append("event_start_date should be a future date")
 
     if len(errors):
         raise CustomError(", ".join(errors), 403)
