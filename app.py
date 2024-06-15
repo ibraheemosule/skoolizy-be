@@ -16,5 +16,5 @@ migrate = Migrate(app, db)
 
 app.register_blueprint(announcements_bp)
 
-if __name__ == '__main__':
-    app.run(debug=app.config.get('DEBUG', False), port=app.config.get('PORT', 5000))
+if __name__ == "__main__":
+    app.run(debug=app.config.get("DEBUG", False), port=app.config.get("PORT", 5000))
