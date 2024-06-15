@@ -37,15 +37,9 @@ def test_get_data(client, url, data, expect):
         assert res[0].get("event_time") == str(
             mk.ANNOUNCEMENT_PAYLOAD["event_time"]
         ), "announcement event_time mismatch"
-        assert (
-            res[0].get("title") == mk.ANNOUNCEMENT_PAYLOAD["title"]
-        ), "announcement title mismatch"
-        assert (
-            res[0].get("message") == mk.ANNOUNCEMENT_PAYLOAD["message"]
-        ), "announcement message mismatch"
-        assert (
-            res[0].get("type") == mk.ANNOUNCEMENT_PAYLOAD["type"]
-        ), "announcement type mismatch"
+        assert res[0].get("title") == mk.ANNOUNCEMENT_PAYLOAD["title"], "announcement title mismatch"
+        assert res[0].get("message") == mk.ANNOUNCEMENT_PAYLOAD["message"], "announcement message mismatch"
+        assert res[0].get("type") == mk.ANNOUNCEMENT_PAYLOAD["type"], "announcement type mismatch"
 
 
 @pytest.mark.parametrize(

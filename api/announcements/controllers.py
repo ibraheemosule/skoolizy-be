@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List
 from flask import Response, request, jsonify, Request
-from sqlalchemy import func, text, Numeric
+from sqlalchemy import func
 from .validations import announcements_validation
 from .data_types import TAnnouncementPayload
 from utils.custom_error import CustomError
@@ -13,7 +13,7 @@ class Announcements:
         try:
             type = request.args.get("type")
             recipient = request.args.get("recipient")
-            event_duration = int(request.args.get("event_days", 0))
+            event_days = int(request.args.get("event_days", 0))
             search = request.args.get("search")
             from_date = request.args.get("from_date")
 
@@ -27,11 +27,7 @@ class Announcements:
                     query = query.filter(Announcement.recipient == recipient)
                 else:
                     return (
-                        jsonify(
-                            {
-                                "error": "invalid recipient: expected (all, parents or students)"
-                            }
-                        ),
+                        jsonify({"error": "invalid recipient: expected (all, parents or students)"}),
                         400,
                     )
 
@@ -40,20 +36,14 @@ class Announcements:
                     query = query.filter(Announcement.type == type)
                 else:
                     return (
-                        jsonify(
-                            {
-                                "error": "invalid type: expected ('multi_event', 'single_event', 'memo')"
-                            }
-                        ),
+                        jsonify({"error": "invalid type: expected ('multi_event', 'single_event', 'memo')"}),
                         400,
                     )
-
-            if type not in ("memo", "single_event") and event_duration:
+            print('lol 1')
+            if type not in ("memo", "single_event") and event_days:
+                print('lol 2')
                 query = query.filter(
-                    func.datediff(
-                        Announcement.event_end_date, Announcement.event_start_date
-                    )
-                    == event_duration
+                    func.datediff(Announcement.event_end_date, Announcement.event_start_date) == event_days
                 )
 
             if from_date:
@@ -69,12 +59,8 @@ class Announcements:
                     )
 
                     if from_date > to_date:
-                        return jsonify(
-                            {"error": "from_date should be an older than to_date"}
-                        )
-                    query = query.filter(
-                        Announcement.date_created.between(from_date, to_date)
-                    )
+                        return jsonify({"error": "from_date should be an older than to_date"})
+                    query = query.filter(Announcement.date_created.between(from_date, to_date))
 
                 except ValueError as e:
                     return (
