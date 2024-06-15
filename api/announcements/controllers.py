@@ -125,3 +125,54 @@ class Announcements:
 
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
+
+    def delete(req: Request, id: str) -> Response:
+        try:
+            announcement: Announcement = Announcement.query.get(id)
+            if announcement is None:
+                raise CustomError(f"Announcement with id-{id} not found", 404)
+            if announcement.type == 'memo':
+                raise CustomError(f"Announcement with id-{id} because it is a memo", 403)
+            if announcement.event_start_date <= datetime.today().date():
+                raise CustomError(f"Can't delete a past event announcement", 403)
+
+            from db import db
+
+            db.session.delete(announcement)
+            db.session.commit()
+            return jsonify({"message": f"Announcement with id-{id} has been deleted"}), 200
+        except CustomError as e:
+            return jsonify({"error": str(e)}), e.status_code
+
+    def update(req: Request, id: str) -> Response:
+        try:
+            data: TAnnouncementPayload = request.json
+
+            announcement: Announcement = Announcement.query.get(id)
+            if announcement is None:
+                raise CustomError(f"Announcement with id-{id} not found", 404)
+
+            keys = request.json.keys()
+            for v in keys:
+                if v in ('type'):
+                    raise CustomError(f"Cannot modify {v}", 403)
+
+            data = {**announcement.to_dict(), **data}
+            data.pop('date_created')
+            data.pop('id')
+            announcements_validation(data)
+
+            announcement.title = data.get("title", announcement.title)
+            announcement.type = data.get("type", announcement.type)
+            announcement.message = data.get("message", announcement.message)
+            announcement.recipient = data.get("recipient", announcement.recipient)
+            announcement.event_start_date = data.get("event_start_date", announcement.event_start_date)
+            announcement.event_end_date = data.get("event_end_date", announcement.event_end_date)
+            announcement.event_time = data.get("event_time", announcement.event_time)
+
+            from db import db
+
+            db.session.commit()
+            return jsonify({"message": f"Announcement with id-{id} has been updated"}), 200
+        except CustomError as e:
+            return jsonify({"error": str(e)}), e.status_code

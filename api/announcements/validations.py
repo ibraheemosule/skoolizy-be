@@ -6,6 +6,7 @@ from utils.custom_error import CustomError
 def announcements_validation(payload: TAnnouncementPayload):
     keys = TAnnouncementPayload.__annotations__.keys()
     errors = []
+    print(payload)
 
     invalid_fields = {
         "memo": {
@@ -29,8 +30,9 @@ def announcements_validation(payload: TAnnouncementPayload):
 
     for k in keys:
         if k in type.get("invalid_payload", {}):
-            if k in payload:
-                errors.append(f"{k} is an invalid payload")
+            if k in payload and payload[k] != None:
+                event_type = payload.get("type")
+                errors.append(f"{k} is an invalid payload for {event_type} announcement type")
         elif k not in type.get("optional_payload", {}) and payload.get(k) is None:
             errors.append(f"{k} is required")
 

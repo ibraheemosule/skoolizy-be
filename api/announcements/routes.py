@@ -19,3 +19,13 @@ def get_announcements():
 @announcements_bp.route("/announcements", methods=["POST"])
 def post_announcements():
     return announcements.post()
+
+
+@announcements_bp.route("/announcements/<string:id>", methods=["DELETE"])
+def delete_announcement(id: str):
+    return announcements.delete(id)
+
+
+@announcements_bp.route("/announcements/<string:id>", methods=["PUT"])
+def update_announcement(id: str):
+    return announcements.update(id)

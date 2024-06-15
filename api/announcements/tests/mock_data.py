@@ -85,7 +85,7 @@ POST_MULTI_EVENT_WITH_VALID_PAYLOAD_201 = (
 POST_MULTI_EVENT_EVENT_TIME_IN_PAYLOAD_403 = (
     ANNOUNCEMENT_PAYLOAD.copy(),
     403,
-    {"error": "event_time is an invalid payload"},
+    {"error": "event_time is an invalid payload for multi_event announcement type"},
 )
 
 POST_MULTI_EVENT_NO_MESSAGE_IN_PAYLOAD_201 = (
@@ -122,7 +122,7 @@ POST_SINGLE_EVENT_WITH_VALID_PAYLOAD_201 = (
 POST_SINGLE_EVENT_EVENT_END_DATE_IN_PAYLOAD_403 = (
     {**ANNOUNCEMENT_PAYLOAD, "type": "single_event"},
     403,
-    {"error": "event_end_date is an invalid payload"},
+    {"error": "event_end_date is an invalid payload for single_event announcement type"},
 )
 
 POST_SINGLE_EVENT_NO_MESSAGE_IN_PAYLOAD_201 = (
@@ -154,17 +154,17 @@ POST_MEMO_WITH_VALID_PAYLOAD_201 = (__MEMO_PAYLOAD, 201, __success_response)
 POST_MEMO_EVENT_END_DATE_IN_PAYLOAD_403 = (
     {**__MEMO_PAYLOAD, "event_end_date": "2020-05-23"},
     403,
-    {"error": "event_end_date is an invalid payload"},
+    {"error": "event_end_date is an invalid payload for memo announcement type"},
 )
 
 POST_MEMO_EVENT_START_DATE_IN_PAYLOAD_403 = (
     {**__MEMO_PAYLOAD, "event_start_date": "2020-05-23"},
     403,
-    {"error": "event_start_date is an invalid payload"},
+    {"error": "event_start_date is an invalid payload for memo announcement type"},
 )
 
 POST_MEMO_EVENT_TIME_IN_PAYLOAD_403 = (
     {**__MEMO_PAYLOAD, "event_time": "05:00:00"},
     403,
-    {"error": "event_time is an invalid payload"},
+    {"error": "event_time is an invalid payload for memo announcement type"},
 )
