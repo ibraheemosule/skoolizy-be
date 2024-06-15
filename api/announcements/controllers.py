@@ -6,6 +6,7 @@ from .validations import announcements_validation
 from .data_types import TAnnouncementPayload
 from utils.custom_error import CustomError
 from .models import Announcement
+from sqlalchemy.orm import Session
 
 
 class Announcements:
@@ -118,7 +119,9 @@ class Announcements:
 
     def get_one(req: Request, id: str) -> Response:
         try:
-            announcement: Announcement = Announcement.query.get(id)
+            from db import db
+
+            announcement: Announcement = db.session.get(Announcement, id)
             if announcement == None:
                 raise CustomError(f"Announcement with id-{id} not found", 404)
             return jsonify({"data": announcement.to_dict()}), 200
@@ -126,29 +129,13 @@ class Announcements:
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
 
-    def delete(req: Request, id: str) -> Response:
-        try:
-            announcement: Announcement = Announcement.query.get(id)
-            if announcement is None:
-                raise CustomError(f"Announcement with id-{id} not found", 404)
-            if announcement.type == 'memo':
-                raise CustomError(f"Announcement with id-{id} because it is a memo", 403)
-            if announcement.event_start_date <= datetime.today().date():
-                raise CustomError(f"Can't delete a past event announcement", 403)
-
-            from db import db
-
-            db.session.delete(announcement)
-            db.session.commit()
-            return jsonify({"message": f"Announcement with id-{id} has been deleted"}), 200
-        except CustomError as e:
-            return jsonify({"error": str(e)}), e.status_code
-
     def update(req: Request, id: str) -> Response:
         try:
             data: TAnnouncementPayload = request.json
+            from db import db
 
-            announcement: Announcement = Announcement.query.get(id)
+            announcement: Announcement = db.session.get(Announcement, id)
+
             if announcement is None:
                 raise CustomError(f"Announcement with id-{id} not found", 404)
 
@@ -174,5 +161,26 @@ class Announcements:
 
             db.session.commit()
             return jsonify({"message": f"Announcement with id-{id} has been updated"}), 200
+        except CustomError as e:
+            return jsonify({"error": str(e)}), e.status_code
+
+    def delete(req: Request, id: str) -> Response:
+        try:
+            from db import db
+
+            announcement: Announcement = db.session.get(Announcement, id)
+            if announcement is None:
+                raise CustomError(f"Announcement with id-{id} not found", 404)
+            if announcement.type == 'memo':
+                raise CustomError(f"Cannot delete announcement with id-{id} because it is a memo", 403)
+
+            if announcement.event_start_date <= datetime.today().date():
+                raise CustomError(f"Can't delete today's event or past event announcement", 403)
+
+            from db import db
+
+            db.session.delete(announcement)
+            db.session.commit()
+            return jsonify({"message": f"Announcement with id-{id} has been deleted"}), 200
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code

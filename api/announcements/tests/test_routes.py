@@ -68,3 +68,16 @@ def test_post_data(client, data, expected_status, expected_message):
     res = client.post("/announcements", json=data)
     assert res.status_code == expected_status
     assert res.json == expected_message
+
+
+@pytest.mark.parametrize(
+    "data, expected_status, expected_message",
+    [mk.DELETE_SINGLE_EVENT_200, mk.DELETE_MULTI_EVENT_200, mk.DELETE_MEMO_403, mk.DELETE_PAST_SINGLE_EVENT_403],
+)
+def test_delete_data(client, data, expected_status, expected_message):
+    db.session.add(Announcement(**data))
+    db.session.commit()
+
+    response = client.delete('/announcements/1')
+    assert response.status_code == expected_status
+    assert response.json == expected_message

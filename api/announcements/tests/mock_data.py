@@ -168,3 +168,15 @@ POST_MEMO_EVENT_TIME_IN_PAYLOAD_403 = (
     403,
     {"error": "event_time is an invalid payload for memo announcement type"},
 )
+
+DELETE_SINGLE_EVENT_200 = (__SINGLE_EVENT_PAYLOAD, 200, {"message": "Announcement with id-1 has been deleted"})
+
+DELETE_PAST_SINGLE_EVENT_403 = (
+    {**__SINGLE_EVENT_PAYLOAD, 'event_start_date': str(datetime.today().date())},
+    403,
+    {'error': "Can't delete today's event or past event announcement"},
+)
+
+DELETE_MULTI_EVENT_200 = (__MULTI_EVENT_PAYLOAD, 200, {"message": "Announcement with id-1 has been deleted"})
+
+DELETE_MEMO_403 = (__MEMO_PAYLOAD, 403, {"error": "Cannot delete announcement with id-1 because it is a memo"})

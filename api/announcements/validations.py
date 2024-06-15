@@ -6,7 +6,6 @@ from utils.custom_error import CustomError
 def announcements_validation(payload: TAnnouncementPayload):
     keys = TAnnouncementPayload.__annotations__.keys()
     errors = []
-    print(payload)
 
     invalid_fields = {
         "memo": {
