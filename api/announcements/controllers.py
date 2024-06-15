@@ -13,15 +13,15 @@ class Announcements:
             type = request.args.get('type')
             recipient = request.args.get('recipient')
             event_duration = int(request.args.get('event_days', 0))
-            keyword = request.args.get('keyword')
+            search = request.args.get('search')
             from_date =  request.args.get('from_date')
 
             query = Announcement.query
             
-            if keyword: query = query.filter(Announcement.title.ilike(f'%{keyword}%'))
+            if search: query = query.filter(Announcement.title.ilike(f'%{search}%'))
 
             if recipient: 
-                 if recipient in ('all', 'parents', 'students'): query = query.filter(Announcement.recipient == recipient )
+                 if recipient in ('all', 'parents', 'teachers', 'students'): query = query.filter(Announcement.recipient == recipient )
                  else: return jsonify({'error': "invalid recipient: expected (all, parents or students)"}), 400
 
             if type: 
