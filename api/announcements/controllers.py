@@ -112,7 +112,7 @@ class Announcements:
             )
 
             db.session.commit()
-            return jsonify({"message": "Data inserted successfully"}), 201
+            return jsonify({"message": "Announcement has been sent"}), 201
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
 

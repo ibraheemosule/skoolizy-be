@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 
-__success_response = {"message": "Data inserted successfully"}
+__success_response = {"message": "Announcement has been sent"}
 __yesterday = str(datetime.today().date() + timedelta(days=-1))
 __tomorrow = str(datetime.today().date() + timedelta(days=1))
 __overmorrow = str(datetime.today().date() + timedelta(days=2))
