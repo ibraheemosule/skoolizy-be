@@ -25,7 +25,10 @@ def announcements_validation(payload: TAnnouncementPayload):
     type = invalid_fields.get(payload.get("type"))
 
     if invalid_fields.get(payload.get("type")) is None:
-        raise CustomError("type should be one of (all, parents, teachers, students)", 403)
+        raise CustomError("type should be one of (memo, single_event, multi_event)", 403)
+
+    if payload.get('recipient', 'all') not in ('all', 'teachers', 'students', 'parents'):
+        raise CustomError("recipient should be one of (all, parents, teachers, students)", 403)
 
     for k in keys:
         if k in type.get("invalid_payload", {}):

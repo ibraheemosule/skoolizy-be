@@ -68,13 +68,13 @@ GET_QUERY_BY_START_DATE_RETURN_DATA = (
 POST_NO_TYPE_IN_PAYLOAD_403 = (
     {k: v for k, v in __MULTI_EVENT_PAYLOAD.items() if k not in ["type"]},
     403,
-    {"error": "type should be one of (all, parents, teachers, students)"},
+    {"error": "type should be one of (memo, single_event, multi_event)"},
 )
 
 POST_INVALID_TYPE_IN_PAYLOAD_403 = (
     {**__MULTI_EVENT_PAYLOAD, "type": "invalid_type"},
     403,
-    {"error": "type should be one of (all, parents, teachers, students)"},
+    {"error": "type should be one of (memo, single_event, multi_event)"},
 )
 
 POST_MULTI_EVENT_WITH_VALID_PAYLOAD_201 = (
