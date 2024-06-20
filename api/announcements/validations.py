@@ -7,6 +7,8 @@ def announcements_validation(payload: TAnnouncementPayload):
     keys = TAnnouncementPayload.__annotations__.keys()
     errors = []
 
+    print(payload)
+
     invalid_fields = {
         "memo": {
             "invalid_payload": ("event_start_date", "event_end_date", "event_time"),
@@ -35,7 +37,7 @@ def announcements_validation(payload: TAnnouncementPayload):
             if k in payload and payload[k] != None:
                 event_type = payload.get("type")
                 errors.append(f"{k} is an invalid payload for {event_type} announcement type")
-        elif k not in type.get("optional_payload", {}) and payload.get(k) is None:
+        elif k not in type.get("optional_payload", {}) and (payload.get(k) is None or payload.get(k) == ''):
             errors.append(f"{k} is required")
 
     if payload.get("type") != "memo" and (start_date := payload.get("event_start_date")):
