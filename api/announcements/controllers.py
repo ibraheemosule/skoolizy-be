@@ -70,6 +70,7 @@ class Announcements:
                         400,
                     )
 
+            query = query.order_by(Announcement.date_created.asc())
             pagination = query.paginate(page=page, per_page=per_page, error_out=False)
             announcements: List[Announcement] = pagination.items
             total_items = pagination.total
