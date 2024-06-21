@@ -77,3 +77,19 @@ class Announcement(db.Model):
                 raise ValueError(f"Invalid date format: {value}. Expected format is 'YYYY-MM-DD'. Error: {e}")
             return date_obj
         return value
+
+    @validates('title')
+    def validate_title(self, key, value):
+        if len(value) < 10:
+            raise ValueError("Announcement title must be at least 10 characters long.")
+        if len(value) > 50:
+            raise ValueError("Announcement title must be no more than 60 characters long.")
+        return value
+
+    @validates('message')
+    def validate_message(self, key, value):
+        if len(value) < 30:
+            raise ValueError("Announcement message must be at least 30 characters long.")
+        if len(value) > 5000:
+            raise ValueError("Announcement message must be no more than 5000 characters long.")
+        return value
