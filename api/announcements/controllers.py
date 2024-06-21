@@ -70,7 +70,7 @@ class Announcements:
                         400,
                     )
 
-            query = query.order_by(Announcement.date_created.asc())
+            query = query.order_by(Announcement.date_created.desc())
             pagination = query.paginate(page=page, per_page=per_page, error_out=False)
             announcements: List[Announcement] = pagination.items
             total_items = pagination.total
@@ -123,6 +123,7 @@ class Announcements:
             from db import db
 
             announcement: Announcement = db.session.get(Announcement, id)
+
             if announcement == None:
                 raise CustomError(f"Announcement with id-{id} not found", 404)
             return jsonify({"data": announcement.to_dict()}), 200
