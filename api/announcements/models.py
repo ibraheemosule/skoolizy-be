@@ -86,6 +86,8 @@ class Announcement(db.Model):
 
     @validates('message')
     def validate_message(self, key, value: str):
+        if not value:
+            return value
         if len(value.strip()) < 30 or len(value.strip()) > 5000:
             raise ValueError("Announcement message must be a minimum of 30 and maximum of 5000 characters")
         return value.strip()

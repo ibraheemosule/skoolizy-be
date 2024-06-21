@@ -96,6 +96,5 @@ def test_update_data(client, data, update_payload, expected_status, expected_mes
     res = client.post("/announcements", json=data)
     res = client.put("/announcements/1", json=update_payload)
 
-    print(res.json)
     assert res.status_code == expected_status
     assert res.json == expected_message

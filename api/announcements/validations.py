@@ -7,8 +7,6 @@ def announcements_validation(payload: TAnnouncementPayload):
     keys = TAnnouncementPayload.__annotations__.keys()
     errors = []
 
-    print(payload)
-
     invalid_fields = {
         "memo": {
             "invalid_payload": ("event_start_date", "event_end_date", "event_time"),
@@ -32,12 +30,21 @@ def announcements_validation(payload: TAnnouncementPayload):
     if payload.get('recipient', 'all') not in ('all', 'teachers', 'students', 'parents'):
         raise CustomError("recipient should be one of (all, parents, teachers, students)", 403)
 
+    title = payload.get('title', '').strip()
+
+    if title and len(title) < 10 or len(title) > 50:
+        raise CustomError("Announcement title must be a minimum of 10 and maximum of 50 characters", 403)
+
+    message = payload.get('message', '').strip()
+    if message and len(message) < 30 or len(message) > 5000:
+        raise CustomError("Announcement message must be a minimum of 30 and maximum of 5000 characters", 403)
+
     for k in keys:
         if k in type.get("invalid_payload", {}):
             if k in payload and payload[k] != None:
                 event_type = payload.get("type")
                 errors.append(f"{k} is an invalid payload for {event_type} announcement type")
-        elif k not in type.get("optional_payload", {}) and (payload.get(k) is None or payload.get(k) == ''):
+        elif k not in type.get("optional_payload", {}) and not (payload.get(k)):
             errors.append(f"{k} is required")
 
     if payload.get("type") != "memo" and (start_date := payload.get("event_start_date")):
