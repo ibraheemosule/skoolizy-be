@@ -80,16 +80,12 @@ class Announcement(db.Model):
 
     @validates('title')
     def validate_title(self, key, value):
-        if len(value) < 10:
-            raise ValueError("Announcement title must be at least 10 characters long.")
-        if len(value) > 50:
-            raise ValueError("Announcement title must be no more than 60 characters long.")
-        return value
+        if len(value.strip()) < 10 or len(value.strip()) > 50:
+            raise ValueError("Announcement title must be a minimum of 10 and maximum of 50 characters")
+        return value.strip()
 
     @validates('message')
-    def validate_message(self, key, value):
-        if len(value) < 30:
-            raise ValueError("Announcement message must be at least 30 characters long.")
-        if len(value) > 5000:
-            raise ValueError("Announcement message must be no more than 5000 characters long.")
-        return value
+    def validate_message(self, key, value: str):
+        if len(value.strip()) < 30 or len(value.strip()) > 5000:
+            raise ValueError("Announcement message must be a minimum of 30 and maximum of 5000 characters")
+        return value.strip()
