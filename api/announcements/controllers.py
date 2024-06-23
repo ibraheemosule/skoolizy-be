@@ -61,12 +61,9 @@ class Announcements:
                     )
 
                     if from_date > to_date:
+                        to_date_message = "to date" if request.args.get("to_date") else "today's date"
                         return (
-                            jsonify(
-                                {
-                                    "error": f"From date should be an older than {'to date' if data.get('to_date') else '''today's date'''}"
-                                }
-                            ),
+                            jsonify({"error": f"From date should be an older than {to_date_message}"}),
                             403,
                         )
                     query = query.filter(Announcement.date_created.between(from_date, to_date))

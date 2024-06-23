@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from .data_types import TAnnouncementPayload
 from utils.custom_error import CustomError
 
