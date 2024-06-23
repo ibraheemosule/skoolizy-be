@@ -61,7 +61,14 @@ class Announcements:
                     )
 
                     if from_date > to_date:
-                        return jsonify({"error": "from_date should be an older than to_date"}), 403
+                        return (
+                            jsonify(
+                                {
+                                    "error": f"From date should be an older than {'to date' if data.get('to_date') else '''today's date'''}"
+                                }
+                            ),
+                            403,
+                        )
                     query = query.filter(Announcement.date_created.between(from_date, to_date))
 
                 except ValueError as e:

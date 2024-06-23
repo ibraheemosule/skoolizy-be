@@ -7,13 +7,16 @@ __tomorrow = str(datetime.today().date() + timedelta(days=1))
 __overmorrow = str(datetime.today().date() + timedelta(days=2))
 __three_days_from_today = str(datetime.today().date() + timedelta(days=3))
 
+__title = "testing to ensure this implementation works"
+__message = "test message to ensure this implementation works fine as well"
+
 ANNOUNCEMENT_PAYLOAD = {
-    "title": "testing",
+    "title": __title,
     "event_time": "05:00:00",
     "event_start_date": __tomorrow,
     "event_end_date": __overmorrow,
     "type": "multi_event",
-    "message": "here is another working",
+    "message": __message,
 }
 __MULTI_EVENT_PAYLOAD = {k: v for k, v in ANNOUNCEMENT_PAYLOAD.items() if k != "event_time"}
 __SINGLE_EVENT_PAYLOAD = {
@@ -75,6 +78,12 @@ POST_INVALID_TYPE_IN_PAYLOAD_403 = (
     {**__MULTI_EVENT_PAYLOAD, "type": "invalid_type"},
     403,
     {"error": "type should be one of (memo, single_event, multi_event)"},
+)
+
+POST_INVALID_RECIPIENT_IN_PAYLOAD_403 = (
+    {**__MULTI_EVENT_PAYLOAD, "recipient": "invalid_type"},
+    403,
+    {'error': 'recipient should be one of (all, parents, teachers, students)'},
 )
 
 POST_MULTI_EVENT_WITH_VALID_PAYLOAD_201 = (
@@ -186,7 +195,7 @@ DELETE_MEMO_403 = (__MEMO_PAYLOAD, 403, {"error": "Cannot delete announcement wi
 UPDATE_MULTI_EVENT_VALID_DATA_200 = (
     __MULTI_EVENT_PAYLOAD,
     {
-        'message': 'update',
+        'message': 'update a new message here to test',
         'event_start_date': __overmorrow,
         'event_end_date': __three_days_from_today,
         'title': 'here is owkring',
@@ -204,7 +213,11 @@ UPDATE_MULTI_EVENT_END_DATE_EARLIER_THAN_EVENT_START_DATE_DATA_403 = (
 
 UPDATE_SINGLE_EVENT_VALID_DATA_200 = (
     __SINGLE_EVENT_PAYLOAD,
-    {'message': 'update', 'event_start_date': __three_days_from_today, 'title': 'here is owkring'},
+    {
+        'message': 'update thhis is the way you want to work here',
+        'event_start_date': __three_days_from_today,
+        'title': 'here is owkring',
+    },
     200,
     {'message': 'Announcement with id-1 has been updated'},
 )
