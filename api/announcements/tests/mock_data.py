@@ -16,6 +16,7 @@ ANNOUNCEMENT_PAYLOAD = {
     "event_start_date": __tomorrow,
     "event_end_date": __overmorrow,
     "type": "multi_event",
+    "reminder": None,
     "message": __message,
 }
 __MULTI_EVENT_PAYLOAD = {k: v for k, v in ANNOUNCEMENT_PAYLOAD.items() if k != "event_time"}
@@ -25,7 +26,7 @@ __SINGLE_EVENT_PAYLOAD = {
 __MEMO_PAYLOAD = {
     k: v if v != "multi_event" else "memo"
     for k, v in ANNOUNCEMENT_PAYLOAD.items()
-    if k not in ["event_end_date", "event_time", "event_start_date"]
+    if k not in ["event_end_date", "event_time", "event_start_date", "reminder"]
 }
 
 

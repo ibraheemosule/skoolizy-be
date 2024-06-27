@@ -9,16 +9,16 @@ def announcements_validation(payload: TAnnouncementPayload):
 
     invalid_fields = {
         "memo": {
-            "invalid_payload": ("event_start_date", "event_end_date", "event_time"),
+            "invalid_payload": ("event_start_date", "event_end_date", "event_time", "reminder"),
             "optional_payload": ("recipient"),
         },
         "single_event": {
             "invalid_payload": ("event_end_date"),
-            "optional_payload": ("message", "recipient"),
+            "optional_payload": ("message", "recipient", "reminder"),
         },
         "multi_event": {
             "invalid_payload": ("event_time"),
-            "optional_payload": ("message", "recipient"),
+            "optional_payload": ("message", "recipient", "reminder"),
         },
     }
 
