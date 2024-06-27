@@ -28,7 +28,7 @@ class Announcement(db.Model):
     event_start_date = db.Column(Date, nullable=True)
     event_end_date = db.Column(Date, nullable=True)
     event_time = db.Column(Time, nullable=True)
-    reminder = db.Column(Enum("1", "2", "5", "7"), default=None)
+    reminder = db.Column(Enum("1", '2', '3', '4', '5', '6', '7'), default=None)
 
     __table_args__ = (
         CheckConstraint(

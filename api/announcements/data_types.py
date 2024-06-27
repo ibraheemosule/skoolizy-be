@@ -20,4 +20,4 @@ class TAnnouncementPayload(TypedDict):
     event_start_date: Optional[str]
     event_end_date: Optional[str]
     event_time: Optional[str]
-    reminder: Optional[Literal[1, 3, 5, 7]]
+    reminder: Optional[Literal[1, 2, 3, 4, 5, 6, 7]]
