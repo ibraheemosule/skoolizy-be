@@ -28,6 +28,7 @@ class Announcement(db.Model):
     event_start_date = db.Column(Date, nullable=True)
     event_end_date = db.Column(Date, nullable=True)
     event_time = db.Column(Time, nullable=True)
+    reminder = db.Column(Enum("1", "2", "5", "7"), default=None)
 
     __table_args__ = (
         CheckConstraint(
@@ -56,6 +57,7 @@ class Announcement(db.Model):
             "event_start_date": (self.event_start_date.isoformat() if self.event_start_date else None),
             "event_end_date": (self.event_end_date.isoformat() if self.event_end_date else None),
             "event_time": self.event_time.isoformat() if self.event_time else None,
+            "reminder": self.reminder,
         }
 
     @validates("event_time")

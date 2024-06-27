@@ -30,6 +30,7 @@ pytest==8.2.2
 pytest-mock==3.14.0
 python-dotenv==1.0.1
 PyYAML==6.0.1
+schedule==1.2.2
 SQLAlchemy==2.0.30
 typing_extensions==4.12.2
 virtualenv==20.26.2

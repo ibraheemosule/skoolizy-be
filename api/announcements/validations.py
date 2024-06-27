@@ -39,6 +39,10 @@ def announcements_validation(payload: TAnnouncementPayload):
     if message and len(message) < 30 or len(message) > 5000:
         raise CustomError("Announcement message must be a minimum of 30 and maximum of 5000 characters", 403)
 
+    if reminder := payload.get("reminder"):
+        if reminder not in ('1', '3', '5', '7'):
+            raise CustomError("Reminder must be between (1, 3, 5, 7) days", 403)
+
     for k in keys:
         if k in type.get("invalid_payload", {}):
             if k in payload and payload[k] != None:

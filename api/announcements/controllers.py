@@ -6,7 +6,7 @@ from .validations import announcements_validation
 from .data_types import TAnnouncementPayload
 from utils.custom_error import CustomError
 from .models import Announcement
-from sqlalchemy.orm import Session
+from utils import get_html
 
 
 class Announcements:
@@ -114,10 +114,33 @@ class Announcements:
                     event_start_date=(data.get("event_start_date")),
                     event_end_date=(data.get("event_end_date")),
                     event_time=(data.get("event_time")),
+                    reminder=(data.get("reminder")),
                 )
             )
 
             db.session.commit()
+
+            if data.get("reminder"):
+                message = (
+                    get_html.get_email('announcement.html')
+                    .replace("{{message}}", data['message'])
+                    .replace("{{title}}", data["title"])
+                )
+                id = Announcement.query.order_by(Announcement.id.desc()).first().to_dict()['id']
+
+                from utils.email_utils import schedule_email
+
+                schedule_email(
+                    **{
+                        "id": str(id),
+                        "subject": data["title"],
+                        "message": message,
+                        "recipient": ["ibraheemsulay@gmail.com", "ibraheemosule@gmail.com"],
+                        "interval": data['reminder'],
+                        "event_start_date": data["event_start_date"],
+                    }
+                )
+
             return jsonify({"message": "Announcement has been sent"}), 201
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
@@ -147,7 +170,7 @@ class Announcements:
 
             keys = request.json.keys()
             for v in keys:
-                if v in ('type'):
+                if v in ('type', "recipient", 'reminder'):
                     raise CustomError(f"Cannot modify {v}", 403)
 
             data = {**announcement.to_dict(), **data}
@@ -156,9 +179,7 @@ class Announcements:
             announcements_validation(data)
 
             announcement.title = data.get("title", announcement.title)
-            announcement.type = data.get("type", announcement.type)
             announcement.message = data.get("message", announcement.message)
-            announcement.recipient = data.get("recipient", announcement.recipient)
             announcement.event_start_date = data.get("event_start_date", announcement.event_start_date)
             announcement.event_end_date = data.get("event_end_date", announcement.event_end_date)
             announcement.event_time = data.get("event_time", announcement.event_time)
@@ -190,3 +211,16 @@ class Announcements:
             return jsonify({"message": f"Announcement with id-{id} has been deleted"}), 200
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
+
+    def stop_reminder(req: Request, id: str):
+        from utils import email_utils
+
+        email_utils.stop_scheduled_email(id)
+
+        from db import db
+
+        announcement: Announcement = db.session.get(Announcement, id)
+        announcement.reminder = None
+        db.session.commit()
+
+        return jsonify({"message": f"Reminder email stopped for job id-{id}"}), 200

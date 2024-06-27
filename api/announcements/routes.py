@@ -29,3 +29,8 @@ def delete_announcement(id: str):
 @announcements_bp.route("/announcements/<string:id>", methods=["PUT"])
 def update_announcement(id: str):
     return announcements.update(id)
+
+
+@announcements_bp.route("/announcements/stop-reminder/<string:id>", methods=["PATCH"])
+def stop_reminder(id: str):
+    return announcements.stop_reminder(id)
