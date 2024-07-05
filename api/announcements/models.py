@@ -50,7 +50,7 @@ class Announcement(db.Model):
         return {
             "id": self.id,
             "recipient": self.recipient,
-            "date_created": (self.date_created.isoformat() if self.date_created else None),
+            "date_created": (self.date_created.isoformat() + 'Z' if self.date_created else None),
             "title": self.title,
             "type": self.type,
             "message": self.message,
