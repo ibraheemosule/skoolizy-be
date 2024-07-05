@@ -187,6 +187,7 @@ class Announcements:
             from db import db
 
             db.session.commit()
+
             return jsonify({"message": f"Announcement with id-{id} has been updated"}), 200
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
@@ -208,6 +209,7 @@ class Announcements:
 
             db.session.delete(announcement)
             db.session.commit()
+
             return jsonify({"message": f"Announcement with id-{id} has been deleted"}), 200
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
