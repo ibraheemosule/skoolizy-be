@@ -135,7 +135,7 @@ class Announcements:
                         "id": str(id),
                         "subject": data["title"],
                         "message": message,
-                        "recipient": ["ibraheemsulay@gmail.com", "ibraheemosule@gmail.com"],
+                        "recipient": ["suleibraeem@gmail.com"],
                         "interval": data['reminder'],
                         "event_start_date": data["event_start_date"],
                     }
