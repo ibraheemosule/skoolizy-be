@@ -21,7 +21,7 @@ class Announcement(db.Model):
         Enum("all", "parents", "teachers", "students", name="recipient_enum"),
         default="all",
     )
-    date_created = db.Column(TIMESTAMP(timezone=True), default=func.now())
+    date_created = db.Column(TIMESTAMP(timezone=True), default=func.current_timestamp())
     title = db.Column(String(255), nullable=False)
     type = db.Column(Enum("memo", "single_event", "multi_event", name="type_enum"), nullable=False)
     message = db.Column(String(255), nullable=True)
