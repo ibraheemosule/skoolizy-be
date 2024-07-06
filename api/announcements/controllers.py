@@ -17,6 +17,7 @@ class Announcements:
             event_days = int(request.args.get("event_days", 0))
             search = request.args.get("search")
             from_date = request.args.get("from_date")
+            to_date = request.args.get('to_date')
             page = int(request.args.get('page', 1))
             per_page = int(request.args.get('per_page', 10))
 
@@ -51,22 +52,31 @@ class Announcements:
             if from_date:
                 try:
                     from_date = datetime.strptime(from_date, "%Y-%m-%d")
-                    to_date = (
+                    to_date = to_date and datetime.strptime(to_date, "%Y-%m-%d") + timedelta(days=1) - timedelta(
+                        seconds=1
+                    )
+
+                    today_date = (
                         datetime.strptime(
-                            request.args.get("to_date", str(datetime.today().date())),
+                            str(datetime.today().date()),
                             "%Y-%m-%d",
                         )
                         + timedelta(days=1)
                         - timedelta(seconds=1)
                     )
 
-                    if from_date > to_date:
-                        to_date_message = "to date" if request.args.get("to_date") else "today's date"
+                    if from_date > today_date:
                         return (
-                            jsonify({"error": f"From date should be an older than {to_date_message}"}),
+                            jsonify({"error": f"From date should be an older than today's date"}),
                             403,
                         )
-                    query = query.filter(Announcement.date_created.between(from_date, to_date))
+
+                    if to_date and from_date > to_date:
+                        return (
+                            jsonify({"error": f"From date should be an older than To date"}),
+                            403,
+                        )
+                    query = query.filter(Announcement.date_created.between(from_date, to_date or today_date))
 
                 except ValueError as e:
                     return (
