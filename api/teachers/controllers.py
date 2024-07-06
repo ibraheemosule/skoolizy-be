@@ -2,14 +2,15 @@ from datetime import datetime, timedelta
 from typing import List
 from flask import Response, request, jsonify, Request
 from sqlalchemy import func
-from .validations import announcements_validation
-from .data_types import TAnnouncementPayload
+from .validations import teacher_validation
+from .data_types import TTeacherPayload
 from utils.custom_error import CustomError
-from .models import Announcement
-from utils import get_html
+from .models import Teacher
+import boto3
+import os
 
 
-class Announcements:
+class Teachers:
     def get(req: Request) -> Response:
         try:
             type = request.args.get("type")
@@ -21,14 +22,14 @@ class Announcements:
             page = int(request.args.get('page', 1))
             per_page = int(request.args.get('per_page', 10))
 
-            query = Announcement.query
+            query = Teacher.query
 
             if search:
-                query = query.filter(Announcement.title.ilike(f"%{search}%"))
+                query = query.filter(Teacher.title.ilike(f"%{search}%"))
 
             if recipient:
                 if recipient in ("all", "parents", "teachers", "students"):
-                    query = query.filter(Announcement.recipient == recipient)
+                    query = query.filter(Teacher.recipient == recipient)
                 else:
                     return (
                         jsonify({"error": "invalid recipient: expected (all, parents or students)"}),
@@ -37,7 +38,7 @@ class Announcements:
 
             if type:
                 if type in ("multi_event", "single_event", "memo"):
-                    query = query.filter(Announcement.type == type)
+                    query = query.filter(Teacher.type == type)
                 else:
                     return (
                         jsonify({"error": "invalid type: expected ('multi_event', 'single_event', 'memo')"}),
@@ -45,9 +46,7 @@ class Announcements:
                     )
 
             if type not in ("memo", "single_event") and event_days:
-                query = query.filter(
-                    func.datediff(Announcement.event_end_date, Announcement.event_start_date) == event_days
-                )
+                query = query.filter(func.datediff(Teacher.event_end_date, Teacher.event_start_date) == event_days)
 
             if from_date:
                 try:
@@ -76,7 +75,7 @@ class Announcements:
                             jsonify({"error": f"From date should be an older than To date"}),
                             403,
                         )
-                    query = query.filter(Announcement.date_created.between(from_date, to_date or today_date))
+                    query = query.filter(Teacher.date_created.between(from_date, to_date or today_date))
 
                 except ValueError as e:
                     return (
@@ -84,9 +83,9 @@ class Announcements:
                         400,
                     )
 
-            query = query.order_by(Announcement.date_created.desc())
+            query = query.order_by(Teacher.date_created.desc())
             pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-            announcements: List[Announcement] = pagination.items
+            announcements: List[Teacher] = pagination.items
             total_items = pagination.total
             total_pages = pagination.pages
 
@@ -109,49 +108,52 @@ class Announcements:
 
     def post(req: Request) -> Response:
         try:
-            data: TAnnouncementPayload = request.json
-            announcements_validation(data)
+            data: TTeacherPayload = request.json
+            # teacher_validation(data)
 
             from db import db
-            from .models import Announcement
+            from .models import Teacher
+
+            data = request.json
+            email = data.get('email')
+            password = data.get('password')
+            group = data.get('role')
+
+            cognito_client = boto3.client('cognito-idp', region_name='')
+            cognito_client
+            response = cognito_client.admin_create_user(
+                UserPoolId='',
+                Username=email,
+                TemporaryPassword=password,
+                UserAttributes=[
+                    {'Name': 'email', 'Value': email},
+                    # {'Name': 'email_verified', 'Value': 'true'}
+                ],
+            )
+
+            # # Add user to group
+            # cognito_client.admin_add_user_to_group(
+            #     UserPoolId=cognito_user_pool_id,
+            #     Username=email,
+            #     GroupName=group
+            # )
 
             db.session.add(
-                Announcement(
-                    title=data.get("title"),
-                    type=data.get("type"),
-                    message=data.get("message"),
-                    recipient=data.get("recipient", "all"),
-                    event_start_date=(data.get("event_start_date")),
-                    event_end_date=(data.get("event_end_date")),
-                    event_time=(data.get("event_time")),
-                    reminder=(data.get("reminder")),
+                Teacher(
+                    first_name=data.get("first_name"),
+                    last_name=data.get("last_name"),
+                    other_name=data.get("other_name"),
+                    gender=data.get("gender"),
+                    date_of_birth=(data.get("date_of_birth")),
+                    country=(data.get("country")),
+                    state_of_origin=(data.get("state_of_origin")),
+                    email=(data.get("email")),
                 )
             )
 
             db.session.commit()
 
-            if data.get("reminder"):
-                message = (
-                    get_html.get_email('announcement.html')
-                    .replace("{{message}}", data['message'])
-                    .replace("{{title}}", data["title"])
-                )
-                id = Announcement.query.order_by(Announcement.id.desc()).first().to_dict()['id']
-
-                from utils.email_utils import schedule_email
-
-                schedule_email(
-                    **{
-                        "id": str(id),
-                        "subject": data["title"],
-                        "message": message,
-                        "recipient": ["suleibraeem@gmail.com"],
-                        "interval": data['reminder'],
-                        "event_start_date": data["event_start_date"],
-                    }
-                )
-
-            return jsonify({"message": "Announcement has been sent"}), 201
+            return jsonify({"message": "Your account has been created"}), 201
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
 
@@ -159,10 +161,10 @@ class Announcements:
         try:
             from db import db
 
-            announcement: Announcement = db.session.get(Announcement, id)
+            announcement: Teacher = db.session.get(Teacher, id)
 
             if announcement == None:
-                raise CustomError(f"Announcement with id-{id} not found", 404)
+                raise CustomError(f"Teacher with id-{id} not found", 404)
             return jsonify({"data": announcement.to_dict()}), 200
 
         except CustomError as e:
@@ -170,11 +172,10 @@ class Announcements:
 
     def update(req: Request, id: str) -> Response:
         try:
-            data: TAnnouncementPayload = request.json
-
+            data: TTeacherPayload = request.json
             from db import db
 
-            announcement: Announcement = db.session.get(Announcement, id)
+            announcement: Teacher = db.session.get(Teacher, id)
 
             if announcement is None:
                 raise CustomError(f"Announcement with id-{id} not found", 404)
@@ -187,13 +188,15 @@ class Announcements:
             data = {**announcement.to_dict(), **data}
             data.pop('date_created')
             data.pop('id')
-            announcements_validation(data)
+            teacher_validation(data)
 
             announcement.title = data.get("title", announcement.title)
             announcement.message = data.get("message", announcement.message)
             announcement.event_start_date = data.get("event_start_date", announcement.event_start_date)
             announcement.event_end_date = data.get("event_end_date", announcement.event_end_date)
             announcement.event_time = data.get("event_time", announcement.event_time)
+
+            from db import db
 
             db.session.commit()
 
@@ -205,7 +208,8 @@ class Announcements:
         try:
             from db import db
 
-            announcement: Announcement = db.session.get(Announcement, id)
+            announcement: Teacher = db.session.get(Teacher, id)
+
             if announcement is None:
                 raise CustomError(f"Announcement with id-{id} not found", 404)
             if announcement.type == 'memo':
@@ -220,17 +224,3 @@ class Announcements:
             return jsonify({"message": f"Announcement with id-{id} has been deleted"}), 200
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
-
-    def stop_reminder(req: Request, id: str):
-        from utils import email_utils
-
-        email_utils.stop_scheduled_email(id)
-
-        from db import db
-
-        announcement: Announcement = db.session.get(Announcement, id)
-        announcement.reminder = None
-
-        db.session.commit()
-
-        return jsonify({"message": f"Reminder email stopped for job id-{id}"}), 200

@@ -16,6 +16,8 @@ class Config:
     MYSQL_CURSORCLASS = os.getenv("FLASK_MYSQL_CURSORCLASS")
     DEBUG = os.getenv("FLASK_DEBUG")
     TESTING = os.getenv("FLASK_TESTING")
+    AWS_ACCESS_KEY_ID = os.getenv('FLASK_AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.getenv('FLASK_AWS_SECRET_ACCESS_KEY')
 
 
 class DevelopmentConfig(Config):
