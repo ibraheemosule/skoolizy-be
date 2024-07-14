@@ -2,7 +2,7 @@ from typing import TypedDict, Literal, Optional
 
 
 class TTeacher(TypedDict):
-    user_id: str
+    id: str
     date_created: str
     first_name: str
     last_name: str
@@ -12,6 +12,8 @@ class TTeacher(TypedDict):
     country: str
     state_of_origin: str
     email: str
+    tier: Literal[1, 2, 3, 4, 5]
+    role: Literal['staff']
 
 
 class TTeacherPayload(TypedDict):

@@ -4,6 +4,7 @@ import schedule
 import time
 from datetime import datetime
 import threading
+import re
 
 from utils.custom_error import CustomError
 
@@ -58,3 +59,8 @@ def send_email(subject, message, recipients):
         server.quit()
     except Exception as e:
         print(f"Failed to send email: {e}")
+
+
+def is_email_valid(email):
+    regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(regex, email) is not None

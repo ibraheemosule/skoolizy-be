@@ -124,7 +124,7 @@ class Announcements:
                     event_start_date=(data.get("event_start_date")),
                     event_end_date=(data.get("event_end_date")),
                     event_time=(data.get("event_time")),
-                    reminder=(data.get("reminder")),
+                    reminder=data.get("reminder") and str(data.get("reminder")),
                 )
             )
 

@@ -6,8 +6,8 @@ from .validations import teacher_validation
 from .data_types import TTeacherPayload
 from utils.custom_error import CustomError
 from .models import Teacher
-import boto3
 import os
+from cognito import cognito_client
 
 
 class Teachers:
@@ -109,34 +109,35 @@ class Teachers:
     def post(req: Request) -> Response:
         try:
             data: TTeacherPayload = request.json
-            # teacher_validation(data)
+            teacher_validation(data, ['password'])
+
+            email = data.get('email')
+            password = data.get('password')
 
             from db import db
             from .models import Teacher
 
-            data = request.json
-            email = data.get('email')
-            password = data.get('password')
-            group = data.get('role')
+            last_id = getattr(Teacher.query.order_by(Teacher.id.desc()).first(), 'get_id', lambda: None)() or 0
+            tag = f'sf-{last_id + 1}'
 
-            cognito_client = boto3.client('cognito-idp', region_name='')
-            cognito_client
-            response = cognito_client.admin_create_user(
-                UserPoolId='',
-                Username=email,
+            cognito = cognito_client()
+            cognito.admin_create_user(
+                UserPoolId=os.getenv('FLASK_COGNITO_USER_POOL_ID'),
+                Username=tag,
                 TemporaryPassword=password,
                 UserAttributes=[
                     {'Name': 'email', 'Value': email},
+                    {'Name': 'username', 'Value': tag}
                     # {'Name': 'email_verified', 'Value': 'true'}
                 ],
             )
 
-            # # Add user to group
-            # cognito_client.admin_add_user_to_group(
-            #     UserPoolId=cognito_user_pool_id,
-            #     Username=email,
-            #     GroupName=group
-            # )
+            cognito.admin_add_user_to_group(
+                UserPoolId=os.getenv('FLASK_COGNITO_USER_POOL_ID'),
+                Username=tag,
+                # Email=email,
+                GroupName='staff',
+            )
 
             db.session.add(
                 Teacher(
@@ -148,6 +149,8 @@ class Teachers:
                     country=(data.get("country")),
                     state_of_origin=(data.get("state_of_origin")),
                     email=(data.get("email")),
+                    tier=str(3),
+                    tag=tag,
                 )
             )
 

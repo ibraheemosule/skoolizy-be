@@ -1,13 +1,4 @@
-from sqlalchemy import (
-    Enum,
-    String,
-    Time,
-    Date,
-    Integer,
-    TIMESTAMP,
-    func,
-    CheckConstraint,
-)
+from sqlalchemy import Enum, String, Time, Date, Integer, TIMESTAMP, func, CheckConstraint, Index
 from db import db
 from sqlalchemy.orm import validates
 
@@ -15,7 +6,8 @@ from sqlalchemy.orm import validates
 class Teacher(db.Model):
     __tablename__ = "teachers"
 
-    user_id = db.Column(Integer, primary_key=True, autoincrement=True)
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    tag = db.Column(String(30), primary_key=True, unique=True)
     first_name = db.Column(String(50), nullable=False)
     last_name = db.Column(String(50), nullable=False)
     other_name = db.Column(String(50), nullable=True)
@@ -24,10 +16,17 @@ class Teacher(db.Model):
     country = db.Column(String(50), nullable=False)
     state_of_origin = db.Column(String(50), nullable=False)
     email = db.Column(String(50), nullable=False)
+    tier = db.Column(Enum("1", '2', '3', '4', '5'), default='1')
+    role = db.Column(Enum('staff'), default='staff')
+
+    __table_args__ = (Index('idx_name', tag),)
+
+    def get_id(self):
+        return self.id
 
     def to_dict(self):
         return {
-            "user_id": self.user_id,
+            "id": self.id,
             "first_name": self.first_name,
             "last_name": self.last_name,
             "other_name": self.other_name,
@@ -36,6 +35,9 @@ class Teacher(db.Model):
             "country": self.country,
             "state_of_origin": self.state_of_origin,
             'email': self.email,
+            "tier": self.tier,
+            "role": self.role,
+            "tag": self.tag,
         }
 
     @validates('first_name', 'last_name', 'other_name', 'country', 'state_of_origin', 'email')
