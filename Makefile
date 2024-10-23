@@ -14,7 +14,7 @@ install:
 
 # Run tests with pytest in testing environment
 test:
-	FLASK_ENV=testing pytest
+	FLASK_ENV=testing pytest -s
 
 # Reset the database migrations
 reset-migration:
@@ -27,4 +27,5 @@ reset-migration:
 # Update the requirements file with current installed packages
 update-pkg:
 	pip freeze > requirements.txt
+
 

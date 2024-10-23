@@ -1,3 +1,4 @@
+import os
 import pytest
 from app import app as flask_app
 from db import db
@@ -7,7 +8,7 @@ from db import db
 def app():
     with flask_app.app_context():
         db.create_all()
-        yield app
+        yield flask_app
         db.session.remove()
         db.drop_all()
 

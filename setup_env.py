@@ -8,16 +8,19 @@ class __Config:
     APP = os.getenv("FLASK_APP")
     PORT = int(os.getenv("FLASK_RUN_PORT"))
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_recycle": 280}
-    SQLALCHEMY_DATABASE_URI = os.getenv("FLASK_DB_URI") + os.getenv("FLASK_MYSQL_DB")
+    SQLALCHEMY_DATABASE_URI = os.getenv("MYSQL_DB_URI") + os.getenv("MYSQL_DB")
+    ACCESS_TOKEN_EXPIRES_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRES_MINUTES")
+    REFRESH_TOKEN_EXPIRES_DAYS = os.getenv('REFRESH_TOKEN_EXPIRES_DAYS')
+    OTP_EXPIRY_TIME_IN_MINUTES = os.getenv('OTP_EXPIRY_TIME_IN_MINUTES')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+    MYSQL_CURSORCLASS = os.getenv('MYSQL_CURSORCLASS')
     DEBUG = False
     TESTING = False
 
 
 class __DevelopmentConfig(__Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.getenv("FLASK_DB_URI") + os.getenv(
-        "FLASK_MYSQL_DB_DEV"
-    )
+    SQLALCHEMY_DATABASE_URI = os.getenv("MYSQL_DB_URI") + os.getenv("MYSQL_DB_DEV")
 
 
 class TestingConfig:
@@ -26,11 +29,13 @@ class TestingConfig:
 
 
 env = os.getenv("FLASK_ENV", "development")
-config = (
-    TestingConfig
-    if env == "testing"
-    else __DevelopmentConfig
-    if env == "development"
-    else __Config
-)
+selected_config = __Config
+
+if env == "testing":
+    selected_config = TestingConfig
+if env == "development":
+    selected_config = __DevelopmentConfig
+
+config = selected_config
+
 __all__ = ["config", TestingConfig]

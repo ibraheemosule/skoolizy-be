@@ -1,6 +1,6 @@
 from datetime import datetime
 from .data_types import TAnnouncementPayload
-from utils.custom_error import CustomError
+from utils.error_handlers import CustomError
 
 
 def announcements_validation(payload: TAnnouncementPayload):
@@ -22,7 +22,7 @@ def announcements_validation(payload: TAnnouncementPayload):
         },
     }
 
-    type = invalid_fields.get(payload.get("type"))
+    types = invalid_fields.get(payload.get("type"))
 
     if invalid_fields.get(payload.get("type")) is None:
         raise CustomError("type should be one of (memo, single_event, multi_event)", 403)
@@ -44,14 +44,14 @@ def announcements_validation(payload: TAnnouncementPayload):
             raise CustomError("Reminder must be between (1, 2, 3, 4, 5, 6, 7) days", 403)
 
     for k in keys:
-        if k in type.get("invalid_payload", {}):
+        if k in types.get("invalid_payload", {}):
             if k in payload and payload[k] != None:
                 event_type = payload.get("type")
                 errors.append(f"{k} is an invalid payload for {event_type} announcement type")
-        elif k not in type.get("optional_payload", {}) and not (payload.get(k)):
+        elif k not in types.get("optional_payload", {}) and not (payload.get(k)):
             errors.append(f"{k} is required")
 
-    if payload.get("type") != "memo" and (start_date := payload.get("event_start_date")):
+    if payload.get("type") != "memo" and payload.get("event_start_date"):
         start_date = datetime.strptime(payload.get("event_start_date"), "%Y-%m-%d").date()
         end_date = (
             datetime.strptime(payload.get("event_end_date"), "%Y-%m-%d").date()
