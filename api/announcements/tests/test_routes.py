@@ -94,7 +94,7 @@ def test_delete_data(client, data, expected_status, expected_message):
     ],
 )
 def test_update_data(client, data, update_payload, expected_status, expected_message):
-    res = client.post("/announcements", json=data)
+    client.post("/announcements", json=data)
     res = client.put("/announcements/1", json=update_payload)
 
     assert res.status_code == expected_status

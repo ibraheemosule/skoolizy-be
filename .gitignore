@@ -66,3 +66,6 @@ db_config.py
 
 # Ignore SQLAlchemy migration files
 /migrations/
+
+# Redis dump
+dump.rdb

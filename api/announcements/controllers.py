@@ -4,13 +4,13 @@ from flask import Response, request, jsonify, Request
 from sqlalchemy import func
 from .validations import announcements_validation
 from .data_types import TAnnouncementPayload
-from utils.custom_error import CustomError
+from utils.error_handlers import CustomError
 from .models import Announcement
 from utils import get_html
 
 
 class Announcements:
-    def get(req: Request) -> Response:
+    def get(self) -> Response:
         try:
             type = request.args.get("type")
             recipient = request.args.get("recipient")
@@ -107,7 +107,7 @@ class Announcements:
         except Exception as e:
             return jsonify({"error": str(e)}), 400
 
-    def post(req: Request) -> Response:
+    def post(self) -> Response:
         try:
             data: TAnnouncementPayload = request.json
             announcements_validation(data)
@@ -132,20 +132,20 @@ class Announcements:
 
             if data.get("reminder"):
                 message = (
-                    get_html.get_email('announcement.html')
+                    get_html.get_email('boilerplate.html')
                     .replace("{{message}}", data['message'])
                     .replace("{{title}}", data["title"])
                 )
-                id = Announcement.query.order_by(Announcement.id.desc()).first().to_dict()['id']
+                _id = Announcement.query.order_by(Announcement.id.desc()).first().to_dict()['id']
 
                 from utils.email_utils import schedule_email
 
                 schedule_email(
                     **{
-                        "id": str(id),
-                        "subject": data["title"],
+                        "id": str(_id),
+                        "subject": 'New Announcement From Skoolizy',
                         "message": message,
-                        "recipient": ["suleibraeem@gmail.com"],
+                        "recipient": ["sulayibraheem@gmail.com"],
                         "interval": data['reminder'],
                         "event_start_date": data["event_start_date"],
                     }
@@ -155,7 +155,7 @@ class Announcements:
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
 
-    def get_one(req: Request, id: str) -> Response:
+    def get_one(self, id: str) -> Response:
         try:
             from db import db
 
@@ -168,7 +168,7 @@ class Announcements:
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
 
-    def update(req: Request, id: str) -> Response:
+    def update(self, id: str) -> Response:
         try:
             data: TAnnouncementPayload = request.json
 
@@ -201,7 +201,7 @@ class Announcements:
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
 
-    def delete(req: Request, id: str) -> Response:
+    def delete(self, id: str) -> Response:
         try:
             from db import db
 
@@ -212,7 +212,7 @@ class Announcements:
                 raise CustomError(f"Cannot delete announcement with id-{id} because it is a memo", 403)
 
             if announcement.event_start_date <= datetime.today().date():
-                raise CustomError(f"Can't delete today's event or past event announcement", 403)
+                raise CustomError("Can't delete today's event or past event announcement", 403)
 
             db.session.delete(announcement)
             db.session.commit()
@@ -221,7 +221,7 @@ class Announcements:
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
 
-    def stop_reminder(req: Request, id: str):
+    def stop_reminder(self, id: str):
         from utils import email_utils
 
         email_utils.stop_scheduled_email(id)

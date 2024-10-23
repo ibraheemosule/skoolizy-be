@@ -1,4 +1,4 @@
-from typing import Any, TypedDict, Literal, Optional
+from typing import TypedDict, Literal, Optional
 
 
 class TAnnouncement(TypedDict):

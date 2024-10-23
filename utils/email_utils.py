@@ -1,18 +1,20 @@
 import os
-from flask import jsonify
 import schedule
 import time
 from datetime import datetime
 import threading
 import re
+from typing import List
 
-from utils.custom_error import CustomError
+from utils.error_handlers import CustomError
 
 email_schedules = {}
 
 
 def schedule_email(id, subject, message, recipient, interval, event_start_date):
-    job = schedule.every(int(interval)).days.do(lambda: send_email(subject, message, recipient))
+    job = schedule.every(int(interval)).minutes.do(
+        lambda: send_email(subject=subject, message=message, recipients=recipient)
+    )
     email_schedules[id] = job
 
     def run_schedule():
@@ -38,9 +40,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
-def send_email(subject, message, recipients):
-    from_email = os.getenv('FLASK_EMAIL')
-    password = os.getenv("FLASK_EMAIL_PASSWORD")
+def send_email(*, subject: str, message: str, recipients: List[str]):
+    from_email = os.getenv('EMAIL')
+    password = os.getenv("EMAIL_PASSWORD")
 
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
@@ -63,4 +65,4 @@ def send_email(subject, message, recipients):
 
 def is_email_valid(email):
     regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(regex, email) is not None
+    return bool(re.match(regex, email))
