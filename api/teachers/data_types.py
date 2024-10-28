@@ -25,6 +25,8 @@ class TTeacherPayload(TypedDict):
     country: str
     state_of_origin: str
     email: str
+    phone_number: str
+    home_address: str
 
 
 class TConfirmSignup(TypedDict):

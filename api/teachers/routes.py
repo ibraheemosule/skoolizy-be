@@ -16,11 +16,6 @@ def get_teachers():
     return teachers.get()
 
 
-@teachers_bp.route("/teachers", methods=["POST"])
-def post_teachers():
-    return teachers.create()
-
-
 @teachers_bp.route("/teachers/<string:id>", methods=["DELETE"])
 def delete_teacher(id: str):
     return teachers.delete(id)
@@ -29,8 +24,3 @@ def delete_teacher(id: str):
 @teachers_bp.route("/teachers/<string:id>", methods=["PUT"])
 def update_teacher(id: str):
     return teachers.update(id)
-
-
-@teachers_bp.route('/teachers/verify', methods=['POST'])
-def confirm_teacher_signup():
-    return teachers.confirm_signup()

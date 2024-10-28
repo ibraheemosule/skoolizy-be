@@ -1,7 +1,7 @@
 from sqlalchemy import Enum, String, Date, Integer, Index, Boolean
 from db import db
 from sqlalchemy.orm import validates
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from utils.error_handlers import CustomError
 
 
@@ -16,6 +16,8 @@ class Teacher(db.Model):
     gender = db.Column(Enum('male', 'female', name='gender_enum'), nullable=False)
     date_of_birth = db.Column(Date, nullable=False)
     country = db.Column(String(50), nullable=False)
+    phone_number = db.Column(String(15), nullable=False)
+    home_address = db.Column(String(200), nullable=False)
     state_of_origin = db.Column(String(50), nullable=False)
     email = db.Column(String(50), nullable=False, unique=True)
     tier = db.Column(Enum("1", '2', '3', '4', '5'), default='1')
@@ -27,6 +29,9 @@ class Teacher(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
 
     def get_id(self):
         return self.id
@@ -41,6 +46,8 @@ class Teacher(db.Model):
             "date_of_birth": self.date_of_birth,
             "country": self.country,
             "state_of_origin": self.state_of_origin,
+            'phone_number': self.phone_number,
+            "hone_address": self.home_address,
             'email': self.email,
             "tier": self.tier,
             "role": self.role,
@@ -48,12 +55,21 @@ class Teacher(db.Model):
             "verified": self.verified,
         }
 
-    @validates('first_name', 'last_name', 'middle_name', 'country', 'state_of_origin', 'email')
+    @validates(
+        'first_name', 'last_name', 'middle_name', 'country', 'state_of_origin', 'email', 'phone_number', 'home_address'
+    )
     def validate_title(self, key, value):
         if not value or not isinstance(value, str):
             raise CustomError(f"{key} has an invalid value", 403)
 
-        if len(value.strip()) < 3 or len(value.strip()) > 50:
+        val_len = len(value.strip())
+
+        if key == 'home_address':
+            if val_len < 20 or val_len > 200:
+                raise CustomError(f"{key} must be a minimum of 20 characters and maximum of 200 characters", 403)
+            return value.strip()
+
+        if val_len < 3 or val_len > 50:
             raise CustomError(f"{key} must be a minimum of 10 and maximum of 50 characters", 403)
         return value.strip()
 

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from flask import jsonify, make_response
+from flask import make_response, request
 from utils.error_handlers import CustomError
 import os
 from redis_client import cache
@@ -7,11 +7,12 @@ from .auth_typings import TUserAuth
 import jwt
 from redis_client import cache
 from utils.email_utils import send_email
+from utils.success_handlers import res
 
 
 def generate_refresh_token(user_id: TUserAuth):
     """Generate refresh tokens"""
-    REFRESH_TOKEN_EXPIRES_DAYS = os.getenv('REFRESH_TOKEN_EXPIRES_DAYS')
+    REFRESH_TOKEN_EXPIRES_DAYS = int(os.getenv('REFRESH_TOKEN_EXPIRES_DAYS'))
 
     refresh_token = jwt.encode(
         {**user_id, 'exp': datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRES_DAYS)},
@@ -27,7 +28,10 @@ def generate_access_token(user_id: TUserAuth):
     """Generate access tokens"""
 
     access_token = jwt.encode(
-        {**user_id, 'exp': datetime.now(timezone.utc) + timedelta(minutes=os.getenv("ACCESS_TOKEN_EXPIRES_MINUTES"))},
+        {
+            **user_id,
+            'exp': datetime.now(timezone.utc) + timedelta(minutes=int(os.getenv("ACCESS_TOKEN_EXPIRES_MINUTES"))),
+        },
         os.getenv('JWT_SECRET_KEY'),
         algorithm="HS256",
     )
@@ -35,23 +39,25 @@ def generate_access_token(user_id: TUserAuth):
     return access_token
 
 
-def decode_token(token):
+def decode_token(*, token, err_message="token"):
     """Verify and decode a JWT token."""
 
     try:
         return jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"], options={"verify_exp": True})
     except jwt.ExpiredSignatureError:
-        return 'expired'
+        raise CustomError(f"Expired {err_message}")
     except jwt.InvalidTokenError:
-        return 'invalid'
+        raise CustomError(f"Invalid {err_message}")
 
 
 def generate_tokens_and_response(user_id: TUserAuth, status_code=200):
     """Generate token and send json response"""
 
     response = make_response(
-        jsonify({"data": {"tag": user_id.get("tag"), "access_token": generate_access_token(user_id=user_id)}}),
-        status_code,
+        res(
+            data={"tag": user_id.get("tag"), "access_token": generate_access_token(user_id=user_id)},
+            status_code=status_code,
+        ),
     )
 
     response.set_cookie("refresh_token", generate_refresh_token(user_id), httponly=True)
@@ -72,7 +78,6 @@ def generate_otp(*, recipient: str, email_title: str):
     message = f"Your OTP is {otp}"
     send_email(recipients=[recipient], subject=email_title, message=message)
 
-    print(os.getenv('OTP_EXPIRY_TIME_IN_MINUTES'))
     cache.setex(recipient, int(os.getenv('OTP_EXPIRY_TIME_IN_MINUTES')) * 60, otp)
 
     return f"OTP has been sent to {recipient}"
@@ -93,3 +98,19 @@ def verify_otp(*, otp: int, recipient: str):
         return True
     else:
         return False
+
+
+def protected_route(func):
+    def checker(*args, **kwargs):
+        if 'Authorization' not in request.headers:
+            raise CustomError("Access token is missing", 401)
+
+        token = request.headers['Authorization'].split(' ')
+
+        if token[0] != 'Bearer' or not token[1]:
+            raise CustomError('Invalid token format provided')
+
+        kwargs["user"] = decode_token(token=token[1])
+        return func(*args, **kwargs)
+
+    return checker

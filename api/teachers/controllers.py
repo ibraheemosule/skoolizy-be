@@ -1,10 +1,12 @@
-from flask import Response, request, jsonify
+from flask import Response
 from .validations import teacher_validation
-from .data_types import TTeacherPayload, TConfirmSignup
+from .data_types import TTeacherPayload
 from utils.error_handlers import CustomError
 from .models import Teacher
 from werkzeug.security import generate_password_hash
-from utils.auth import generate_tokens_and_response, generate_otp, verify_otp
+from utils.auth import generate_tokens_and_response, verify_otp
+from utils.success_handlers import res
+from utils.helpers import get_date_and_time
 
 
 class Teachers:
@@ -12,9 +14,7 @@ class Teachers:
         '''Will work on this later'''
         pass
 
-    def create(self) -> Response:
-        data: TTeacherPayload = request.json
-
+    def signup(self, data: TTeacherPayload) -> Response:
         teacher_validation(data, ['password'])
 
         password = data.get('password')
@@ -25,7 +25,7 @@ class Teachers:
         from .models import Teacher
 
         last_id = getattr(Teacher.query.order_by(Teacher.id.desc()).first(), 'get_id', lambda: 0)()
-        tag = f'sf-{last_id + 1}'
+        tag = f'staff-{last_id + 1}'
 
         from db import db
 
@@ -35,7 +35,9 @@ class Teachers:
                 last_name=data.get("last_name"),
                 middle_name=data.get("middle_name"),
                 gender=data.get("gender"),
-                date_of_birth=(data.get("date_of_birth")),
+                date_of_birth=get_date_and_time(data.get("date_of_birth"))[0],
+                phone_number=data.get('phone_number'),
+                home_address=data.get('home_address'),
                 country=(data.get("country")),
                 state_of_origin=(data.get("state_of_origin")),
                 email=(data.get("email")),
@@ -46,9 +48,8 @@ class Teachers:
         )
 
         db.session.commit()
-        send_otp = generate_otp(recipient=data.get("email"), email_title="OTP To Verify Account")
 
-        return jsonify({"data": {"message": send_otp}})
+        return res(data={"message": "Sign up successful"})
 
     def get_one(self, id: str) -> Response:
         '''Will work on this later'''
@@ -62,19 +63,12 @@ class Teachers:
         '''Will work on this later'''
         pass
 
-    def confirm_signup(self) -> Response:
-        data: TConfirmSignup = request.json
-        email = data.get('email')
-        verify = verify_otp(otp=data.get('otp'), recipient=email)
+    def confirm_signup(self, email: str) -> Response:
+        teacher: Teacher = Teacher.query.filter_by(email=email).first()
+        teacher.verified = True
 
-        if verify:
-            teacher: Teacher = Teacher.query.filter_by(email=email).first()
-            teacher.verified = True
+        from db import db
 
-            from db import db
+        db.session.commit()
 
-            db.session.commit()
-
-            return generate_tokens_and_response(user_id={"tag": teacher.tag})
-
-        raise CustomError("Invalid OTP, Try again!", 403)
+        return generate_tokens_and_response(user_id={"tag": teacher.tag})

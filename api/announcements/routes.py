@@ -1,5 +1,6 @@
 from flask import Blueprint
 from .controllers import Announcements
+from utils.auth import protected_route
 
 announcements = Announcements()
 
@@ -12,7 +13,8 @@ def get_by_id_announcements(id: str):
 
 
 @announcements_bp.route("/announcements", methods=["GET"])
-def get_announcements():
+@protected_route
+def get_announcements(user):
     return announcements.get()
 
 

@@ -11,101 +11,79 @@ from utils import get_html
 
 class Announcements:
     def get(self) -> Response:
-        try:
-            type = request.args.get("type")
-            recipient = request.args.get("recipient")
-            event_days = int(request.args.get("event_days", 0))
-            search = request.args.get("search")
-            from_date = request.args.get("from_date")
-            to_date = request.args.get('to_date')
-            page = int(request.args.get('page', 1))
-            per_page = int(request.args.get('per_page', 10))
+        announcement_type = request.args.get(
+            "type",
+        )
+        recipient = request.args.get("recipient")
+        event_days = int(request.args.get("event_days", 0))
+        search = request.args.get("search")
+        from_date = request.args.get("from_date")
+        to_date = request.args.get('to_date')
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
 
-            query = Announcement.query
+        query = Announcement.query
 
-            if search:
-                query = query.filter(Announcement.title.ilike(f"%{search}%"))
+        if search:
+            query = query.filter(Announcement.title.ilike(f"%{search}%"))
 
-            if recipient:
-                if recipient in ("all", "parents", "teachers", "students"):
-                    query = query.filter(Announcement.recipient == recipient)
-                else:
-                    return (
-                        jsonify({"error": "invalid recipient: expected (all, parents or students)"}),
-                        400,
-                    )
+        if recipient:
+            if recipient in ("all", "parents", "teachers", "students"):
+                query = query.filter(Announcement.recipient == recipient)
+            else:
+                raise CustomError("invalid recipient: expected (all, parents or students)", 400)
 
-            if type:
-                if type in ("multi_event", "single_event", "memo"):
-                    query = query.filter(Announcement.type == type)
-                else:
-                    return (
-                        jsonify({"error": "invalid type: expected ('multi_event', 'single_event', 'memo')"}),
-                        400,
-                    )
+        if announcement_type:
+            if announcement_type in ("multi_event", "single_event", "memo"):
+                query = query.filter(Announcement.type == announcement_type)
+            else:
+                raise CustomError("invalid type: expected ('multi_event', 'single_event', 'memo')", 400)
 
-            if type not in ("memo", "single_event") and event_days:
-                query = query.filter(
-                    func.datediff(Announcement.event_end_date, Announcement.event_start_date) == event_days
-                )
-
-            if from_date:
-                try:
-                    from_date = datetime.strptime(from_date, "%Y-%m-%d")
-                    to_date = to_date and datetime.strptime(to_date, "%Y-%m-%d") + timedelta(days=1) - timedelta(
-                        seconds=1
-                    )
-
-                    today_date = (
-                        datetime.strptime(
-                            str(datetime.today().date()),
-                            "%Y-%m-%d",
-                        )
-                        + timedelta(days=1)
-                        - timedelta(seconds=1)
-                    )
-
-                    if from_date > today_date:
-                        return (
-                            jsonify({"error": f"From date should be an older than today's date"}),
-                            403,
-                        )
-
-                    if to_date and from_date > to_date:
-                        return (
-                            jsonify({"error": f"From date should be an older than To date"}),
-                            403,
-                        )
-                    query = query.filter(Announcement.date_created.between(from_date, to_date or today_date))
-
-                except ValueError as e:
-                    return (
-                        jsonify({"error": "Invalid date format: expected YYYY-MM-DD"}),
-                        400,
-                    )
-
-            query = query.order_by(Announcement.date_created.desc())
-            pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-            announcements: List[Announcement] = pagination.items
-            total_items = pagination.total
-            total_pages = pagination.pages
-
-            data = [announcement.to_dict() for announcement in announcements]
-            return (
-                jsonify(
-                    {
-                        "data": data,
-                        'per_page': per_page,
-                        'total_items': total_items,
-                        'page': page,
-                        'total_pages': total_pages,
-                    }
-                ),
-                200,
+        if announcement_type not in ("memo", "single_event") and event_days:
+            query = query.filter(
+                func.datediff(Announcement.event_end_date, Announcement.event_start_date) == event_days
             )
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
+        if from_date:
+            from_date = datetime.strptime(from_date, "%Y-%m-%d")
+            to_date = to_date and datetime.strptime(to_date, "%Y-%m-%d") + timedelta(days=1) - timedelta(seconds=1)
+
+            today_date = (
+                datetime.strptime(
+                    str(datetime.today().date()),
+                    "%Y-%m-%d",
+                )
+                + timedelta(days=1)
+                - timedelta(seconds=1)
+            )
+
+            if from_date > today_date:
+                raise CustomError("From date should be an older than today's date")
+
+            if to_date and from_date > to_date:
+                raise CustomError("From date should be an older than To date")
+
+            query = query.filter(Announcement.date_created.between(from_date, to_date or today_date))
+
+        query = query.order_by(Announcement.date_created.desc())
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        announcements: List[Announcement] = pagination.items
+        total_items = pagination.total
+        total_pages = pagination.pages
+
+        data = [announcement.to_dict() for announcement in announcements]
+        return (
+            jsonify(
+                {
+                    "data": data,
+                    'per_page': per_page,
+                    'total_items': total_items,
+                    'page': page,
+                    'total_pages': total_pages,
+                }
+            ),
+            200,
+        )
 
     def post(self) -> Response:
         try:
