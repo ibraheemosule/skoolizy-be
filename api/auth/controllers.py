@@ -1,5 +1,5 @@
 from flask import Response, request
-from utils.auth import generate_otp, decode_token, generate_access_token, verify_otp
+from utils.auth import generate_otp, decode_token, generate_access_token, generate_tokens_and_response, verify_otp
 from utils.email_utils import is_email_valid
 from utils.auth.auth_typings import TUserAuth
 from typing import Union
@@ -14,22 +14,42 @@ class Auth:
         if data.get('role') == 'staff':
             from api.teachers.controllers import Teachers
 
-            return Teachers.signup(data=data)
+            teachers = Teachers()
+            return teachers.signup(data=data)
 
         raise CustomError("Invalid role provided")
 
     def confirm_signup(self) -> Response:
+        print(request.json)
         data = request.json
-        email = data.get(email)
+        email = data.get("email")
 
         verify = verify_otp(otp=data.get('otp'), recipient=email)
 
         if verify:
             from api.teachers.controllers import Teachers
 
-            Teachers.confirm_signup(email)
+            teachers = Teachers()
+            return teachers.confirm_signup(email)
 
         raise CustomError("Unable to confirm signup!", 403)
+
+    def signin(self) -> Response:
+        data = request.json
+        tag = data.get("tag")
+        password = data.get("password")
+
+        from api.teachers.models import Teacher
+
+        teacher: Teacher = Teacher.query.filter_by(tag=tag).first()
+
+        if not teacher:
+            raise CustomError(f"Account with {tag} not found", 404)
+
+        if not teacher.check_password(password=password):
+            raise CustomError("Password is incorrect")
+
+        return generate_tokens_and_response(user_id={"tag": teacher.tag})
 
     def send_otp(self) -> Response:
         data = request.json
@@ -41,6 +61,7 @@ class Auth:
 
     def refresh_token(self) -> Response:
         refresh_token = request.cookies.get('refresh_token')
+        print(request.cookies)
 
         if not refresh_token:
             raise CustomError("Token is missing")

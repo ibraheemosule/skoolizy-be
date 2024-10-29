@@ -44,6 +44,7 @@ class Teachers:
                 tier=str(3),
                 tag=tag,
                 password_hash=generate_password_hash(data.get('password')),
+                role=data.get('role'),
             )
         )
 

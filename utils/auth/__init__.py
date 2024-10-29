@@ -60,13 +60,15 @@ def generate_tokens_and_response(user_id: TUserAuth, status_code=200):
         ),
     )
 
-    response.set_cookie("refresh_token", generate_refresh_token(user_id), httponly=True)
+    response.set_cookie(
+        key="refresh_token", value=generate_refresh_token(user_id), httponly=True, secure=True, samesite='Strict'
+    )
     return response
 
 
 def generate_otp(*, recipient: str, email_title: str):
     """Generate otp and send to email"""
-    cache.delete(recipient)
+
     if cache.get(recipient):
         return "Previous OTP sent is still valid"
 
@@ -75,8 +77,14 @@ def generate_otp(*, recipient: str, email_title: str):
 
     otp = ceil(random() * 1000000)
 
-    message = f"Your OTP is {otp}"
-    send_email(recipients=[recipient], subject=email_title, message=message)
+    from utils.get_html import get_email
+
+    content = (
+        get_email('boilerplate.html')
+        .replace("{{message}}", f"Your OTP is {otp}")
+        .replace("{{title}}", "OTP from Skoolizy")
+    )
+    send_email(recipients=[recipient], subject=email_title, message=content)
 
     cache.setex(recipient, int(os.getenv('OTP_EXPIRY_TIME_IN_MINUTES')) * 60, otp)
 
@@ -111,6 +119,7 @@ def protected_route(func):
             raise CustomError('Invalid token format provided')
 
         kwargs["user"] = decode_token(token=token[1])
+        print(kwargs["user"])
         return func(*args, **kwargs)
 
     return checker

@@ -16,6 +16,11 @@ def confirm_signup():
     return auth.confirm_signup()
 
 
+@auth_bp.route('/auth/signin', methods=['POST'])
+def signin():
+    return auth.signin()
+
+
 @auth_bp.route("/auth/send-otp", methods=["POST"])
 def send_otp():
     return auth.send_otp()

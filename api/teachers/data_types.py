@@ -14,6 +14,7 @@ class TTeacher(TypedDict):
     email: str
     tier: Literal[1, 2, 3, 4, 5]
     role: Literal['staff']
+    tag: str
 
 
 class TTeacherPayload(TypedDict):
@@ -27,6 +28,7 @@ class TTeacherPayload(TypedDict):
     email: str
     phone_number: str
     home_address: str
+    role: Literal['staff']
 
 
 class TConfirmSignup(TypedDict):
