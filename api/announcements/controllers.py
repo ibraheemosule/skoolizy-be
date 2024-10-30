@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
 from typing import List
-from flask import Response, request, jsonify, Request
+from flask import Response, request, jsonify
 from sqlalchemy import func
 from .validations import announcements_validation
 from .data_types import TAnnouncementPayload
 from utils.error_handlers import CustomError
 from .models import Announcement
-from utils import get_html
 
 
 class Announcements:
@@ -107,13 +106,9 @@ class Announcements:
             )
 
             db.session.commit()
+            from utils.get_html import default_html
 
             if data.get("reminder"):
-                message = (
-                    get_html.get_email('boilerplate.html')
-                    .replace("{{message}}", data['message'])
-                    .replace("{{title}}", data["title"])
-                )
                 _id = Announcement.query.order_by(Announcement.id.desc()).first().to_dict()['id']
 
                 from utils.email_utils import schedule_email
@@ -122,7 +117,7 @@ class Announcements:
                     **{
                         "id": str(_id),
                         "subject": 'New Announcement From Skoolizy',
-                        "message": message,
+                        "message": default_html(title=data["title"], message=data["message"]),
                         "recipient": ["sulayibraheem@gmail.com"],
                         "interval": data['reminder'],
                         "event_start_date": data["event_start_date"],

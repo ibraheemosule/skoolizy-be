@@ -1,10 +1,12 @@
 from flask import Response, request
 from utils.auth import generate_otp, decode_token, generate_access_token, generate_tokens_and_response, verify_otp
-from utils.email_utils import is_email_valid
+from utils.email_utils import is_email_valid, send_email
 from utils.auth.auth_typings import TUserAuth
 from typing import Union
 from utils.error_handlers import CustomError
 from utils.success_handlers import res
+from redis_client import cache
+from utils.get_html import default_html
 
 
 class Auth:
@@ -15,12 +17,19 @@ class Auth:
             from api.teachers.controllers import Teachers
 
             teachers = Teachers()
-            return teachers.signup(data=data)
+            response, message = teachers.signup(data=data)
+
+            send_email(
+                subject="Account Created on Skoolizy",
+                message=default_html(message=message, title="Welcome to Skoolizy"),
+                recipients=[data.get('email')],
+            )
+
+            return response
 
         raise CustomError("Invalid role provided")
 
     def confirm_signup(self) -> Response:
-        print(request.json)
         data = request.json
         email = data.get("email")
 
@@ -90,15 +99,13 @@ class Auth:
         If this was initated by you, Please click this 
         <a href="{link}" target="_blank">link</a>"""
 
-        from utils.get_html import get_email
-
-        content = (
-            get_email('boilerplate.html').replace("{{message}}", message).replace("{{title}}", "Password Reset Link")
+        send_email(
+            subject="Reset your password",
+            message=default_html(message=message, title="Password Reset Link"),
+            recipients=[teacher.email],
         )
 
-        from utils.email_utils import send_email
-
-        send_email(subject="Reset your password", message=content, recipients=[teacher.email])
+        cache.setex(name=token, value="unused", time=int(os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES')) * 60)
 
         return res(data={"message": f"A reset password link has been sent to {tag} email"})
 
@@ -109,7 +116,10 @@ class Auth:
         token = data.get('token')
         new_password = data.get('new_password')
 
-        if not token:
+        if cache.get(token) == 'used':
+            raise CustomError('Reset password link has been used!', 409)
+
+        if not cache.get(token):
             raise CustomError('Reset password link is invalid')
 
         if not new_password:
@@ -128,11 +138,24 @@ class Auth:
 
         from api.teachers.models import Teacher
 
-        teacher: Teacher = Teacher.query.get(tag)
+        teacher: Teacher = Teacher.query.filter_by(tag=tag).first()
         teacher.set_password(password=new_password)
 
         from db import db
 
         db.session.commit()
+
+        import os
+
+        message = f"""Your account password has been reset successfully.\n
+        You have been logged out of all sessions. You can <a href={os.getenv('FRONTEND_URL')} target="_blank">Log in here</a>"""
+
+        send_email(
+            subject="Password reset notificaton",
+            message=default_html(message=message, title="Password Reset Successful"),
+            recipients=[teacher.email],
+        )
+
+        cache.setex(name=token, value="used", time=int(os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES')) * 60)
 
         return res(data={"message": "Password reset successfully"})

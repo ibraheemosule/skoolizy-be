@@ -4,7 +4,7 @@ from .data_types import TTeacherPayload
 from utils.error_handlers import CustomError
 from .models import Teacher
 from werkzeug.security import generate_password_hash
-from utils.auth import generate_tokens_and_response, verify_otp
+from utils.auth import generate_tokens_and_response
 from utils.success_handlers import res
 from utils.helpers import get_date_and_time
 
@@ -50,7 +50,20 @@ class Teachers:
 
         db.session.commit()
 
-        return res(data={"message": "Sign up successful"})
+        import os
+
+        message = f"""
+            Hi {data.get('first_name')},
+
+            Your account has been successfully created!
+            
+            <strong>Your Tag is {tag}.</strong> Use it to 
+
+            You can now <a href={os.getenv('FRONTEND_URL')}/auth/login target="_blank">log in<a> and start exploring all that we offer. If you have any questions, feel free to reach out to our <a href="mailto:{os.getenv('EMAIL')}>support team</a>.
+
+            Thanks for joining us!"""
+
+        return res(data={"message": "Sign up successful", "tag": tag}), message
 
     def get_one(self, id: str) -> Response:
         '''Will work on this later'''
