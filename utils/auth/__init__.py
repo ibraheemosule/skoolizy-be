@@ -75,14 +75,16 @@ def generate_otp(*, recipient: str, email_title: str):
     from random import random
     from math import ceil
 
-    otp = ceil(random() * 1000000)
+    # otp = ceil(random() * 1000000)
 
     from utils.get_html import default_html
+
+    print(recipient)
 
     send_email(
         recipients=[recipient],
         subject=email_title,
-        message=default_html(title="OTP from Skoolizy", message=f"Your OTP is {otp}"),
+        message=default_html(title="OTP from Skoolizy", message=f"Your OTP is another"),
     )
 
     # cache.setex(recipient, int(os.getenv('OTP_EXPIRY_TIME_IN_MINUTES')) * 60, otp)
