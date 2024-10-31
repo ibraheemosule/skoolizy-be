@@ -65,7 +65,9 @@ class Auth:
         email = data.get('email')
 
         if is_email_valid(email):
-            return res(data={"message": generate_otp(recipient=email, email_title="OTP from Skoolizy")})
+            send_status = generate_otp(recipient=email, email_title="OTP from Skoolizy")
+
+            return res(data={"message": send_status})
         raise CustomError("Invalid email payload")
 
     def refresh_token(self) -> Response:
