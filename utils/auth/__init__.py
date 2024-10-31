@@ -69,6 +69,10 @@ def generate_tokens_and_response(user_id: TUserAuth, status_code=200):
 def generate_otp(*, recipient: str, email_title: str):
     """Generate otp and send to email"""
 
+    print(
+        os.getenv('OTP_EXPIRY_TIME_IN_MINUTES'), os.getenv('EMAIL', os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES'), 'here')
+    )
+
     if cache.get(recipient):
         return "Previous OTP sent is still valid"
 

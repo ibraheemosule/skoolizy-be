@@ -59,7 +59,7 @@ class Teachers:
             
             <strong>Your Tag is {tag}.</strong> Use it to 
 
-            You can now <a href={os.getenv('FRONTEND_URL')}/auth/login target="_blank">log in<a> and start exploring all that we offer. If you have any questions, feel free to reach out to our <a href="mailto:{os.getenv('EMAIL')}>support team</a>.
+            You can now <a href={os.getenv('FRONTEND_URL')}/auth/login target="_blank">log in<a> and start exploring all that we offer. If you have any questions, feel free to reach out to our <a href="mailto:{os.getenv('EMAIL')}">support team</a>.
 
             Thanks for joining us!"""
 
