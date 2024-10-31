@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
@@ -38,16 +39,36 @@ def __db_errors(e: SQLAlchemyError):
 
 
 def __unhandled_errors(e):
+    print(
+        os.getenv('OTP_EXPIRY_TIME_IN_MINUTES'),
+        os.getenv('EMAIL'),
+        os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES'),
+        'unhandle err',
+    )
     print(e)
     return __error_response(error_type="server error", message=str(e), status_code=500)
 
 
 def __handle_type_errors(e: TypeError):
+    print(
+        os.getenv('OTP_EXPIRY_TIME_IN_MINUTES'),
+        os.getenv('EMAIL'),
+        os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES'),
+        'handle type err',
+    )
+
     print(e)
     return __error_response(message="Invalid value received. {}".format(str(e)), status_code=403)
 
 
 def __handle_value_errors(e: TypeError):
+    print(
+        os.getenv('OTP_EXPIRY_TIME_IN_MINUTES'),
+        os.getenv('EMAIL'),
+        os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES'),
+        'handle value err',
+    )
+
     if str(e).find('%Y-%m-%d'):
         return __error_response(message="Invalid date format: expected YYYY-MM-DD", status_code=403)
     return __error_response(message="Invalid value received. {}".format(str(e)), status_code=403)
