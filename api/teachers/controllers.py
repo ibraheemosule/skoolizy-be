@@ -53,13 +53,11 @@ class Teachers:
         import os
 
         message = f"""
-            Hi {data.get('first_name')},
-
-            Your account has been successfully created!
-            
-            <strong>Your Tag is {tag}.</strong> Use it to 
-
-            You can now <a href={os.getenv('FRONTEND_URL')}/auth/login target="_blank">log in<a> and start exploring all that we offer. If you have any questions, feel free to reach out to our <a href="mailto:{os.getenv('EMAIL')}">support team</a>.
+            Hi {data.get('first_name')},\n
+            Your account has been successfully created!\n
+            <strong>Your Tag is {tag}.</strong>\n
+            Use it to <a href={os.getenv('FRONTEND_URL')}/auth/login target="_blank">log in<a> and start exploring all that we offer.\n
+            If you have any questions, feel free to reach out to our <a href="mailto:{os.getenv('EMAIL')}">support team</a>.
 
             Thanks for joining us!"""
 

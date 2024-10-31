@@ -70,7 +70,7 @@ def generate_otp(*, recipient: str, email_title: str):
     """Generate otp and send to email"""
 
     print(
-        os.getenv('OTP_EXPIRY_TIME_IN_MINUTES'), os.getenv('EMAIL', os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES'), 'here')
+        os.getenv('OTP_EXPIRY_TIME_IN_MINUTES'), os.getenv('EMAIL'), os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES'), 'here'
     )
 
     if cache.get(recipient):
