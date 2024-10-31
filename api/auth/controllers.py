@@ -1,4 +1,4 @@
-from flask import Response, request
+from flask import Response, jsonify, request
 from utils.auth import generate_otp, decode_token, generate_access_token, generate_tokens_and_response, verify_otp
 from utils.email_utils import is_email_valid, send_email
 from utils.auth.auth_typings import TUserAuth
@@ -65,7 +65,8 @@ class Auth:
         email = data.get('email')
 
         if is_email_valid(email):
-            return res(data={"message": generate_otp(recipient=email, email_title="OTP from Skoolizy")})
+            return jsonify({"data": {"message": 'success'}}), 200
+            # return res(data={"message": generate_otp(recipient=email, email_title="OTP from Skoolizy")})
         raise CustomError("Invalid email payload")
 
     def refresh_token(self) -> Response:
