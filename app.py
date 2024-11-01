@@ -8,6 +8,10 @@ from setup_env import config
 from db import db
 from utils.error_handlers import app_error_handlers
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 app = Flask(__name__)
 
 CORS(app)

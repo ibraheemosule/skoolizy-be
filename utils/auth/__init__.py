@@ -5,7 +5,6 @@ import os
 from redis_client import cache
 from .auth_typings import TUserAuth
 import jwt
-from redis_client import cache
 from utils.email_utils import send_email
 from utils.success_handlers import res
 
@@ -85,7 +84,7 @@ def generate_otp(*, recipient: str, email_title: str):
     #     message=default_html(title="OTP from Skoolizy", message=f"Your OTP is {str(otp)}"),
     # )
 
-    # cache.setex(recipient, int(os.getenv('OTP_EXPIRY_TIME_IN_MINUTES')) * 60, otp)
+    cache.setex(recipient, int(os.getenv('OTP_EXPIRY_TIME_IN_MINUTES')) * 60, otp)
 
     return f"OTP has been sent to {recipient}"
 
