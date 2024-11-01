@@ -41,6 +41,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 PyYAML==6.0.1
 redis==5.1.1
+requests==2.32.3
 rsa==4.7.2
 s3transfer==0.10.2
 schedule==1.2.2
@@ -48,5 +49,6 @@ six==1.16.0
 SQLAlchemy==2.0.30
 typing_extensions==4.12.2
 urllib3==2.2.2
+vercel==0.2.1
 virtualenv==20.26.2
 Werkzeug==3.0.3
