@@ -6,6 +6,7 @@ import threading
 import re
 from typing import List
 
+from configs import envs
 from utils.error_handlers import CustomError
 
 email_schedules = {}
@@ -41,8 +42,8 @@ from email.mime.multipart import MIMEMultipart
 
 
 def send_email(*, subject: str, message: str, recipients: List[str]):
-    from_email = os.getenv('EMAIL')
-    password = os.getenv("EMAIL_PASSWORD")
+    from_email = envs.EMAIL
+    password = envs.EMAIL_PASSWORD
 
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)

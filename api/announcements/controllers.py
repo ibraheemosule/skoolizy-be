@@ -89,7 +89,7 @@ class Announcements:
             data: TAnnouncementPayload = request.json
             announcements_validation(data)
 
-            from db import db
+            from configs.db import db
             from .models import Announcement
 
             db.session.add(
@@ -130,7 +130,7 @@ class Announcements:
 
     def get_one(self, id: str) -> Response:
         try:
-            from db import db
+            from configs.db import db
 
             announcement: Announcement = db.session.get(Announcement, id)
 
@@ -145,7 +145,7 @@ class Announcements:
         try:
             data: TAnnouncementPayload = request.json
 
-            from db import db
+            from configs.db import db
 
             announcement: Announcement = db.session.get(Announcement, id)
 
@@ -176,7 +176,7 @@ class Announcements:
 
     def delete(self, id: str) -> Response:
         try:
-            from db import db
+            from configs.db import db
 
             announcement: Announcement = db.session.get(Announcement, id)
             if announcement is None:
@@ -199,7 +199,7 @@ class Announcements:
 
         email_utils.stop_scheduled_email(id)
 
-        from db import db
+        from configs.db import db
 
         announcement: Announcement = db.session.get(Announcement, id)
         announcement.reminder = None

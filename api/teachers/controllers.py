@@ -1,4 +1,6 @@
 from flask import Response
+
+from configs import envs
 from .validations import teacher_validation
 from .data_types import TTeacherPayload
 from utils.error_handlers import CustomError
@@ -27,7 +29,7 @@ class Teachers:
         last_id = getattr(Teacher.query.order_by(Teacher.id.desc()).first(), 'get_id', lambda: 0)()
         tag = f'staff-{last_id + 1}'
 
-        from db import db
+        from configs.db import db
 
         db.session.add(
             Teacher(
@@ -56,8 +58,8 @@ class Teachers:
             Hi {data.get('first_name')},\n
             Your account has been successfully created!\n
             <strong>Your Tag is {tag}.</strong>\n
-            Use it to <a href={os.getenv('FRONTEND_URL')}/auth/login target="_blank">log in<a> and start exploring all that we offer.\n
-            If you have any questions, feel free to reach out to our <a href="mailto:{os.getenv('EMAIL')}">support team</a>.
+            Use it to <a href={envs.FRONTEND_URL}/auth/login target="_blank">log in<a> and start exploring all that we offer.\n
+            If you have any questions, feel free to reach out to our <a href="mailto:{envs.EMAIL}">support team</a>.
 
             Thanks for joining us!"""
 
@@ -79,7 +81,7 @@ class Teachers:
         teacher: Teacher = Teacher.query.filter_by(email=email).first()
         teacher.verified = True
 
-        from db import db
+        from configs.db import db
 
         db.session.commit()
 

@@ -8,7 +8,7 @@ from sqlalchemy import (
     func,
     CheckConstraint,
 )
-from db import db
+from configs.db import db
 from sqlalchemy.orm import validates
 import datetime
 

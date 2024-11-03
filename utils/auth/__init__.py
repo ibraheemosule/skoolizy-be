@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from flask import make_response, request
+from configs import envs
 from utils.error_handlers import CustomError
 import os
-from redis_client import cache
+from configs.redis_client import cache
 from .auth_typings import TUserAuth
 import jwt
 from utils.email_utils import send_email
@@ -11,15 +12,14 @@ from utils.success_handlers import res
 
 def generate_refresh_token(user_id: TUserAuth):
     """Generate refresh tokens"""
-    REFRESH_TOKEN_EXPIRES_DAYS = int(os.getenv('REFRESH_TOKEN_EXPIRES_DAYS'))
 
     refresh_token = jwt.encode(
-        {**user_id, 'exp': datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRES_DAYS)},
-        os.getenv('JWT_SECRET_KEY'),
+        {**user_id, 'exp': datetime.now(timezone.utc) + timedelta(days=envs.REFRESH_TOKEN_EXPIRES_DAYS)},
+        envs.JWT_SECRET_KEY,
         algorithm="HS256",
     )
 
-    cache.setex(user_id['tag'], REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60, refresh_token)
+    cache.setex(user_id['tag'], envs.REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60, refresh_token)
     return refresh_token
 
 
@@ -29,9 +29,9 @@ def generate_access_token(user_id: TUserAuth):
     access_token = jwt.encode(
         {
             **user_id,
-            'exp': datetime.now(timezone.utc) + timedelta(minutes=int(os.getenv("ACCESS_TOKEN_EXPIRES_MINUTES"))),
+            'exp': datetime.now(timezone.utc) + timedelta(minutes=envs.ACCESS_TOKEN_EXPIRES_MINUTES),
         },
-        os.getenv('JWT_SECRET_KEY'),
+        envs.JWT_SECRET_KEY,
         algorithm="HS256",
     )
 
@@ -42,7 +42,7 @@ def decode_token(*, token, err_message="token"):
     """Verify and decode a JWT token."""
 
     try:
-        return jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"], options={"verify_exp": True})
+        return jwt.decode(token, envs.JWT_SECRET_KEY, algorithms=["HS256"], options={"verify_exp": True})
     except jwt.ExpiredSignatureError:
         raise CustomError(f"Expired {err_message}")
     except jwt.InvalidTokenError:
@@ -84,7 +84,7 @@ def generate_otp(*, recipient: str, email_title: str):
         message=default_html(title="OTP from Skoolizy", message=f"Your OTP is {str(otp)}"),
     )
 
-    cache.setex(recipient, int(os.getenv('OTP_EXPIRY_TIME_IN_MINUTES')) * 60, otp)
+    cache.setex(recipient, envs.OTP_EXPIRY_TIME_IN_MINUTES * 60, otp)
 
     return f"OTP has been sent to {recipient}"
 

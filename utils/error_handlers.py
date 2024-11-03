@@ -10,8 +10,8 @@ class CustomError(Exception):
         self.message = message
 
 
-def __error_response(*, error_type="client error", message, status_code):
-    return jsonify({"error": error_type, "message": message}), status_code
+def __error_response(*, error_type="client error", message, status_code, context: str = None):
+    return jsonify({"error": error_type, "message": message, "context": context}), status_code
 
 
 def __db_errors(e: SQLAlchemyError):
@@ -40,17 +40,15 @@ def __db_errors(e: SQLAlchemyError):
 
 def __unhandled_errors(e):
     print(e)
-    return __error_response(error_type="server error", message=str(e), status_code=500)
+    return __error_response(
+        error_type="server error",
+        message="An internal error occured! We are currently fixing this",
+        context=str(e),
+        status_code=500,
+    )
 
 
 def __handle_type_errors(e: TypeError):
-    print(
-        os.getenv('OTP_EXPIRY_TIME_IN_MINUTES'),
-        os.getenv('EMAIL'),
-        os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES'),
-        'handle type err',
-    )
-
     print(e)
     return __error_response(message="Invalid value received. {}".format(str(e)), status_code=403)
 

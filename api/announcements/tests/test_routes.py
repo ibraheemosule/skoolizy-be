@@ -1,5 +1,5 @@
 import pytest
-from db import db
+from configs.db import db
 from . import mock_data as mk
 from api.announcements.models import Announcement
 

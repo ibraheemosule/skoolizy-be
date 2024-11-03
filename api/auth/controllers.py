@@ -1,11 +1,13 @@
-from flask import Response, jsonify, request
+from flask import Response, request
+from api.teachers.models import Teacher
+from configs import envs
 from utils.auth import generate_otp, decode_token, generate_access_token, generate_tokens_and_response, verify_otp
 from utils.email_utils import is_email_valid, send_email
 from utils.auth.auth_typings import TUserAuth
 from typing import Union
 from utils.error_handlers import CustomError
 from utils.success_handlers import res
-from redis_client import cache
+from configs.redis_client import cache
 from utils.get_html import default_html
 
 
@@ -65,9 +67,15 @@ class Auth:
         email = data.get('email')
 
         if is_email_valid(email):
+            # teacher: Teacher = Teacher.query.filter_by(email=email).first()
+
+            # if not teacher:
+            #         raise CustomError(f"Account with {tag} not found", 404)
+
             send_status = generate_otp(recipient=email, email_title="OTP from Skoolizy")
 
             return res(data={"message": send_status})
+
         raise CustomError("Invalid email payload")
 
     def refresh_token(self) -> Response:
@@ -93,9 +101,7 @@ class Auth:
 
         token = generate_access_token(user_id={f"reset_{tag}": tag})
 
-        import os
-
-        link = f"{os.getenv('FRONTEND_URL')}/auth/reset-password?token={token}"
+        link = f"{envs.FRONTEND_URL}/auth/reset-password?token={token}"
 
         message = f"""A request has been made to reset your password.\n
         If this was initated by you, Please click this 
@@ -107,7 +113,7 @@ class Auth:
             recipients=[teacher.email],
         )
 
-        cache.setex(name=token, value="unused", time=int(os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES')) * 60)
+        cache.setex(name=token, value="unused", time=envs.ACCESS_TOKEN_EXPIRES_MINUTES * 60)
 
         return res(data={"message": f"A reset password link has been sent to {tag} email"})
 
@@ -143,14 +149,14 @@ class Auth:
         teacher: Teacher = Teacher.query.filter_by(tag=tag).first()
         teacher.set_password(password=new_password)
 
-        from db import db
+        from configs.db import db
 
         db.session.commit()
 
         import os
 
         message = f"""Your account password has been reset successfully.\n
-        You have been logged out of all sessions. You can <a href={os.getenv('FRONTEND_URL')} target="_blank">Log in here</a>"""
+        You have been logged out of all sessions. You can <a href={envs.FRONTEND_URL} target="_blank">Log in here</a>"""
 
         send_email(
             subject="Password reset notificaton",
@@ -158,6 +164,6 @@ class Auth:
             recipients=[teacher.email],
         )
 
-        cache.setex(name=token, value="used", time=int(os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES')) * 60)
+        cache.setex(name=token, value="used", time=envs.ACCESS_TOKEN_EXPIRES_MINUTES * 60)
 
         return res(data={"message": "Password reset successfully"})

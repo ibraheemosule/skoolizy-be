@@ -1,5 +1,5 @@
 from sqlalchemy import Enum, String, Date, Integer, Index, Boolean
-from db import db
+from configs.db import db
 from sqlalchemy.orm import validates
 from werkzeug.security import check_password_hash, generate_password_hash
 from utils.error_handlers import CustomError
