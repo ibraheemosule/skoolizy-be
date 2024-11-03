@@ -52,7 +52,6 @@ dist/
 
 # Docker
 .env.docker
-.dockerignore
 
 # Deployment
 deploy/
@@ -69,3 +68,4 @@ db_config.py
 
 # Redis dump
 dump.rdb
+*.pem
