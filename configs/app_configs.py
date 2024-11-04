@@ -11,7 +11,7 @@ class __Config:
 
 class __DevelopmentConfig(__Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = envs.MYSQL_DB_URI + envs.MYSQL_DB_DEV
+    SQLALCHEMY_DATABASE_URI = envs.MYSQL_DB_URI + (envs.MYSQL_DB_DEV or '')
 
 
 class TestingConfig:
@@ -20,6 +20,7 @@ class TestingConfig:
 
 
 __env = envs.FLASK_ENV
+
 selected_config = __Config
 
 if __env == "testing":

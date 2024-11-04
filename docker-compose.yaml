@@ -2,7 +2,7 @@ services:
   app:
     build: .
     ports:
-      - "5001:5000"
+      - "8080:8080"
     env_file:
-      - .env
-    image: skoolizy
+      - .env.prod
+    image: skoolizy-be
