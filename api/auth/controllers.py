@@ -67,10 +67,10 @@ class Auth:
         email = data.get('email')
 
         if is_email_valid(email):
-            # teacher: Teacher = Teacher.query.filter_by(email=email).first()
+            teacher: Teacher = Teacher.query.filter_by(email=email).first()
 
-            # if not teacher:
-            #         raise CustomError(f"Account with {tag} not found", 404)
+            if not teacher:
+                raise CustomError(f"Account with {tag} not found", 404)
 
             send_status = generate_otp(recipient=email, email_title="OTP from Skoolizy")
 
