@@ -78,10 +78,12 @@ def generate_otp(*, recipient: str, email_title: str):
 
     from utils.get_html import default_html
 
+    html_message = f"Hi, <div>Your code is <strong>{str(otp)}</strong></div> <div>This code expires in 5 minutes</div>"
+
     send_email(
         recipients=[recipient],
         subject=email_title,
-        message=default_html(title="OTP from Skoolizy", message=f"Your OTP is {str(otp)}"),
+        message=default_html(title="Code from Skoolizy", message=html_message),
     )
 
     cache.setex(recipient, envs.OTP_EXPIRY_TIME_IN_MINUTES * 60, otp)
