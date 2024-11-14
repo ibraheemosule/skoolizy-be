@@ -16,18 +16,18 @@ schema = AnnouncementSchema()
 
 class Announcements:
     def get(self) -> Response:
-        data: TAnnouncementPayload = request.args
+        req: TAnnouncementPayload = request.args.get
 
-        announcement_type = data.get(
+        announcement_type = req(
             "announcement_type",
         )
-        recipient = data.get("recipient")
-        event_days = int(data.get("event_days", 0))
-        search = data.get("search")
-        from_date = data.get("from_date")
-        to_date = data.get('to_date')
-        page = int(data.get('page', 1))
-        per_page = int(data.get('per_page', 10))
+        recipient = req("recipient")
+        event_days = int(req("event_days", 0))
+        search = req("search")
+        from_date = req("from_date")
+        to_date = req('to_date')
+        page = int(req('page', 1))
+        per_page = int(req('per_page', 10))
 
         query = Announcement.query
 
