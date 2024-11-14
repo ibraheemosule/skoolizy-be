@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 
 
@@ -25,3 +25,14 @@ def get_date(date: str):
 
 def get_time(time: str):
     return datetime.strftime(time, "%H:%M:%S")
+
+
+def today_date():
+    return (
+        datetime.strptime(
+            str(datetime.today().date()),
+            "%Y-%m-%d",
+        )
+        + timedelta(days=1)
+        - timedelta(seconds=1)
+    )

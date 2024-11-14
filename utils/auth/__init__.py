@@ -119,7 +119,6 @@ def protected_route(func):
             raise CustomError('Invalid token format provided')
 
         kwargs["user"] = decode_token(token=token[1])
-        print(kwargs["user"])
         return func(*args, **kwargs)
 
     return checker

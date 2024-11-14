@@ -6,11 +6,10 @@ from sqlalchemy import (
     Integer,
     TIMESTAMP,
     func,
-    CheckConstraint,
 )
 from configs.db import db
-from sqlalchemy.orm import validates
-import datetime
+from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
+from marshmallow import ValidationError, fields, validate, validates_schema
 
 
 class Announcement(db.Model):
@@ -22,74 +21,61 @@ class Announcement(db.Model):
         default="all",
     )
     date_created = db.Column(TIMESTAMP(timezone=True), default=func.current_timestamp())
-    title = db.Column(String(255), nullable=False)
-    type = db.Column(Enum("memo", "single_event", "multi_event", name="type_enum"), nullable=False)
-    message = db.Column(String(255), nullable=True)
+    title = db.Column(String(100), nullable=False)
+    announcement_type = db.Column(Enum("memo", "single_event", "multi_event", name="type_enum"), nullable=False)
+    message = db.Column(String(1000), nullable=True)
     event_start_date = db.Column(Date, nullable=True)
     event_end_date = db.Column(Date, nullable=True)
     event_time = db.Column(Time, nullable=True)
-    reminder = db.Column(Enum("1", '2', '3', '4', '5', '6', '7'), default=None)
+    reminder = db.Column(Integer(), default=None)
 
-    __table_args__ = (
-        CheckConstraint(
-            "(type != 'multi_event' OR (event_start_date IS NOT NULL AND event_end_date IS NOT NULL))",
-            name="check_multi_event_type",
-        ),
-        CheckConstraint(
-            "(type != 'single_event' OR (event_start_date IS NOT NULL AND event_end_date IS NULL AND event_time IS NOT NULL))",
-            name="check_single_event_type",
-        ),
-        CheckConstraint(
-            "(type != 'memo' OR (event_start_date IS NULL AND event_end_date IS NULL AND event_time IS NULL))",
-            name="check_memo_type",
-        ),
-        CheckConstraint("(type != 'memo' OR (message IS NOT NULL))", name="check_memo_has_message"),
-    )
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "recipient": self.recipient,
-            "date_created": (self.date_created.isoformat() + 'Z' if self.date_created else None),
-            "title": self.title,
-            "type": self.type,
-            "message": self.message,
-            "event_start_date": (self.event_start_date.isoformat() if self.event_start_date else None),
-            "event_end_date": (self.event_end_date.isoformat() if self.event_end_date else None),
-            "event_time": self.event_time.isoformat() if self.event_time else None,
-            "reminder": self.reminder,
-        }
+class AnnouncementSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Announcement
+        load_instance = True
 
-    @validates("event_time")
-    def validate_event_time(self, key, value):
-        if isinstance(value, str):
-            try:
-                time_obj = datetime.datetime.strptime(value, "%H:%M:%S").time()
-            except ValueError as e:
-                raise ValueError(f"Invalid time format: {value}. Expected format is 'HH:MM:SS'. Error: {e}")
-            return time_obj
-        return value
+    recipient = fields.String(validate=validate.OneOf(['all', 'parents', 'teachers', 'students']), default='all')
+    date_created = fields.DateTime()
+    title = fields.String(validate=validate.Length(min=10, max=100), required=True)
+    announcement_type = fields.String(validate=validate.OneOf(["memo", "single_event", "multi_event"]), required=True)
+    message = fields.String(validate=validate.Length(min=20, max=1000))
+    event_start_date = fields.DateTime()
+    event_end_date = fields.DateTime()
+    event_time = fields.Time()
+    reminder = fields.Int(validate=validate.OneOf([1, 2, 3, 4, 5, 6, 7]))
 
-    @validates("event_start_date", "event_end_date")
-    def validate_event_start_date(self, key, value):
-        if isinstance(value, str):
-            try:
-                date_obj = datetime.datetime.strptime(value, "%Y-%m-%d").date()
-            except ValueError as e:
-                raise ValueError(f"Invalid date format: {value}. Expected format is 'YYYY-MM-DD'. Error: {e}")
-            return date_obj
-        return value
+    @validates_schema
+    def validate(self, data, **kwargs):
+        announcement_type = data.get('type')
+        event_start_date = data.get('event_start_date')
+        event_end_date = data.get('event_end_date')
+        event_time = data.get('event_time')
+        message = data.get('message')
 
-    @validates('title')
-    def validate_title(self, key, value):
-        if len(value.strip()) < 10 or len(value.strip()) > 50:
-            raise ValueError("Announcement title must be a minimum of 10 and maximum of 50 characters")
-        return value.strip()
+        if announcement_type == 'multi_event':
+            if event_start_date == None:
+                raise ValidationError("Event start date is required for multi days event", 'event_start_date')
 
-    @validates('message')
-    def validate_message(self, key, value: str):
-        if not value:
-            return value
-        if len(value.strip()) < 30 or len(value.strip()) > 5000:
-            raise ValueError("Announcement message must be a minimum of 30 and maximum of 5000 characters")
-        return value.strip()
+            if event_end_date == None:
+                raise ValidationError("Event end date is required for multi days event", 'event_end_date')
+
+        if announcement_type == 'single_event':
+            if event_start_date == None:
+                raise ValidationError("Event start date is required for a single event", 'event_start_date')
+
+            if event_time == None:
+                raise ValidationError("Event time is required for a single event", 'event_time')
+
+            if event_end_date:
+                raise ValidationError("Event end date should be omitted for a single event", 'event_end_date')
+
+        if announcement_type == 'memo':
+            if message == None:
+                raise ValidationError("Message is required for a memo", 'message')
+
+            if event_start_date:
+                raise ValidationError("Event start date should be omitted for a memo", 'event_start_date')
+
+            if event_end_date:
+                raise ValidationError("Event end date should be omitted for a memo", 'event_end_date')

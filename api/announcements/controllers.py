@@ -1,25 +1,33 @@
 from datetime import datetime, timedelta
-from typing import List
 from flask import Response, request, jsonify
 from sqlalchemy import func
+
+from utils.email_utils import send_email
+from utils.helpers import today_date
+from utils.success_handlers import res, res_paginated
 from .validations import announcements_validation
 from .data_types import TAnnouncementPayload
 from utils.error_handlers import CustomError
-from .models import Announcement
+from .models import Announcement, AnnouncementSchema
+from configs.db import db
+
+schema = AnnouncementSchema()
 
 
 class Announcements:
     def get(self) -> Response:
-        announcement_type = request.args.get(
-            "type",
+        data: TAnnouncementPayload = request.args
+
+        announcement_type = data.get(
+            "announcement_type",
         )
-        recipient = request.args.get("recipient")
-        event_days = int(request.args.get("event_days", 0))
-        search = request.args.get("search")
-        from_date = request.args.get("from_date")
-        to_date = request.args.get('to_date')
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 10))
+        recipient = data.get("recipient")
+        event_days = int(data.get("event_days", 0))
+        search = data.get("search")
+        from_date = data.get("from_date")
+        to_date = data.get('to_date')
+        page = int(data.get('page', 1))
+        per_page = int(data.get('per_page', 10))
 
         query = Announcement.query
 
@@ -34,9 +42,9 @@ class Announcements:
 
         if announcement_type:
             if announcement_type in ("multi_event", "single_event", "memo"):
-                query = query.filter(Announcement.type == announcement_type)
+                query = query.filter(Announcement.announcement_type == announcement_type)
             else:
-                raise CustomError("invalid type: expected ('multi_event', 'single_event', 'memo')", 400)
+                raise CustomError("invalid announcement_type: expected ('multi_event', 'single_event', 'memo')", 400)
 
         if announcement_type not in ("memo", "single_event") and event_days:
             query = query.filter(
@@ -47,69 +55,45 @@ class Announcements:
             from_date = datetime.strptime(from_date, "%Y-%m-%d")
             to_date = to_date and datetime.strptime(to_date, "%Y-%m-%d") + timedelta(days=1) - timedelta(seconds=1)
 
-            today_date = (
-                datetime.strptime(
-                    str(datetime.today().date()),
-                    "%Y-%m-%d",
-                )
-                + timedelta(days=1)
-                - timedelta(seconds=1)
-            )
-
-            if from_date > today_date:
+            if from_date > today_date():
                 raise CustomError("From date should be an older than today's date")
 
             if to_date and from_date > to_date:
                 raise CustomError("From date should be an older than To date")
 
-            query = query.filter(Announcement.date_created.between(from_date, to_date or today_date))
+            query = query.filter(Announcement.date_created.between(from_date, to_date or today_date()))
 
-        query = query.order_by(Announcement.date_created.desc())
-        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-        announcements: List[Announcement] = pagination.items
-        total_items = pagination.total
-        total_pages = pagination.pages
-
-        data = [announcement.to_dict() for announcement in announcements]
-        return (
-            jsonify(
-                {
-                    "data": data,
-                    'per_page': per_page,
-                    'total_items': total_items,
-                    'page': page,
-                    'total_pages': total_pages,
-                }
-            ),
-            200,
+        return res_paginated(
+            schema=AnnouncementSchema(many=True),
+            query=query.order_by(Announcement.date_created.desc()),
+            per_page=per_page,
+            page=page,
         )
 
     def post(self) -> Response:
         try:
             data: TAnnouncementPayload = request.json
-            announcements_validation(data)
 
-            from configs.db import db
-            from .models import Announcement
+            announcement: Announcement = schema.load(data, session=db.session)
 
-            db.session.add(
-                Announcement(
-                    title=data.get("title"),
-                    type=data.get("type"),
-                    message=data.get("message"),
-                    recipient=data.get("recipient", "all"),
-                    event_start_date=(data.get("event_start_date")),
-                    event_end_date=(data.get("event_end_date")),
-                    event_time=(data.get("event_time")),
-                    reminder=data.get("reminder") and str(data.get("reminder")),
-                )
-            )
+            if announcement.event_start_date:
+                announcement.event_start_date = announcement.event_start_date.date()
+            if announcement.event_end_date:
+                announcement.event_end_date = announcement.event_end_date.date()
 
+            db.session.add(announcement)
             db.session.commit()
+
             from utils.get_html import default_html
 
+            send_email(
+                subject="New Announcement From Skoolizy",
+                recipients=["ibraheemsulay@gmail.com"],
+                message=default_html(title=data["title"], message=f"<p>Hello,</p>{data['message']}"),
+            )
+
             if data.get("reminder"):
-                _id = Announcement.query.order_by(Announcement.id.desc()).first().to_dict()['id']
+                _id = schema.dump(Announcement.query.order_by(Announcement.id.desc()).first())['id']
 
                 from utils.email_utils import schedule_email
 
@@ -118,92 +102,74 @@ class Announcements:
                         "id": str(_id),
                         "subject": 'New Announcement From Skoolizy',
                         "message": default_html(title=data["title"], message=data["message"]),
-                        "recipient": ["sulayibraheem@gmail.com"],
+                        "recipient": ["ibraheemsulay@gmail.com"],
                         "interval": data['reminder'],
                         "event_start_date": data["event_start_date"],
                     }
                 )
 
-            return jsonify({"message": "Announcement has been sent"}), 201
+            return res(data={"message": "Announcement has been sent"})
         except CustomError as e:
             return jsonify({"error": str(e)}), e.status_code
 
     def get_one(self, id: str) -> Response:
-        try:
-            from configs.db import db
+        announcement: Announcement = db.session.get(Announcement, id)
 
-            announcement: Announcement = db.session.get(Announcement, id)
-
-            if announcement == None:
-                raise CustomError(f"Announcement with id-{id} not found", 404)
-            return jsonify({"data": announcement.to_dict()}), 200
-
-        except CustomError as e:
-            return jsonify({"error": str(e)}), e.status_code
+        if announcement == None:
+            raise CustomError(f"Announcement with id-{id} not found", 404)
+        return res(data={"data": schema.dump(announcement)})
 
     def update(self, id: str) -> Response:
-        try:
-            data: TAnnouncementPayload = request.json
+        data: TAnnouncementPayload = request.json
 
-            from configs.db import db
+        announcement: Announcement = db.session.get(Announcement, id)
 
-            announcement: Announcement = db.session.get(Announcement, id)
+        if announcement is None:
+            raise CustomError(f"Announcement with id-{id} not found", 404)
 
-            if announcement is None:
-                raise CustomError(f"Announcement with id-{id} not found", 404)
+        keys = request.json.keys()
+        for v in keys:
+            if v in ('announcement_type', "recipient", 'reminder'):
+                raise CustomError(f"Cannot modify {v}", 403)
 
-            keys = request.json.keys()
-            for v in keys:
-                if v in ('type', "recipient", 'reminder'):
-                    raise CustomError(f"Cannot modify {v}", 403)
+        data = {**announcement.to_dict(), **data}
+        data.pop('date_created')
+        data.pop('id')
+        announcements_validation(data)
 
-            data = {**announcement.to_dict(), **data}
-            data.pop('date_created')
-            data.pop('id')
-            announcements_validation(data)
+        announcement.title = data.get("title", announcement.title)
+        announcement.message = data.get("message", announcement.message)
+        announcement.event_start_date = data.get("event_start_date", announcement.event_start_date)
+        announcement.event_end_date = data.get("event_end_date", announcement.event_end_date)
+        announcement.event_time = data.get("event_time", announcement.event_time)
 
-            announcement.title = data.get("title", announcement.title)
-            announcement.message = data.get("message", announcement.message)
-            announcement.event_start_date = data.get("event_start_date", announcement.event_start_date)
-            announcement.event_end_date = data.get("event_end_date", announcement.event_end_date)
-            announcement.event_time = data.get("event_time", announcement.event_time)
+        db.session.commit()
 
-            db.session.commit()
-
-            return jsonify({"message": f"Announcement with id-{id} has been updated"}), 200
-        except CustomError as e:
-            return jsonify({"error": str(e)}), e.status_code
+        return res(data={"message": f"Announcement with id-{id} has been updated"})
 
     def delete(self, id: str) -> Response:
-        try:
-            from configs.db import db
+        announcement: Announcement = db.session.get(Announcement, id)
+        if announcement is None:
+            raise CustomError(f"Announcement with id-{id} not found", 404)
+        if announcement.announcement_type == 'memo':
+            raise CustomError(f"Cannot delete announcement with id-{id} because it is a memo", 403)
 
-            announcement: Announcement = db.session.get(Announcement, id)
-            if announcement is None:
-                raise CustomError(f"Announcement with id-{id} not found", 404)
-            if announcement.type == 'memo':
-                raise CustomError(f"Cannot delete announcement with id-{id} because it is a memo", 403)
+        if announcement.event_start_date <= datetime.today().date():
+            raise CustomError("Can't delete today's event or past event announcement", 403)
 
-            if announcement.event_start_date <= datetime.today().date():
-                raise CustomError("Can't delete today's event or past event announcement", 403)
+        db.session.delete(announcement)
+        db.session.commit()
 
-            db.session.delete(announcement)
-            db.session.commit()
-
-            return jsonify({"message": f"Announcement with id-{id} has been deleted"}), 200
-        except CustomError as e:
-            return jsonify({"error": str(e)}), e.status_code
+        return res(data={"message": f"Announcement with id-{id} has been deleted"}, status_code=204)
 
     def stop_reminder(self, id: str):
         from utils import email_utils
 
         email_utils.stop_scheduled_email(id)
 
-        from configs.db import db
-
         announcement: Announcement = db.session.get(Announcement, id)
         announcement.reminder = None
 
         db.session.commit()
 
-        return jsonify({"message": f"Reminder email stopped for job id-{id}"}), 200
+        return res(data={"message": f"Reminder email id-{id} has been stopped"}, status_code=202)

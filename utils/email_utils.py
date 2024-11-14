@@ -1,4 +1,3 @@
-import os
 import schedule
 import time
 from datetime import datetime
@@ -19,7 +18,7 @@ def schedule_email(id, subject, message, recipient, interval, event_start_date):
     email_schedules[id] = job
 
     def run_schedule():
-        while datetime.now() <= datetime.strptime(event_start_date, '%Y-%m-%d'):
+        while datetime.now() <= datetime.strptime(event_start_date, '%Y-%m-%dT%H:%M:%S.%fZ'):
             schedule.run_pending()
             time.sleep(1)
 

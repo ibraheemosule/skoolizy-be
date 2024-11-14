@@ -1,5 +1,6 @@
 import os
 from flask import Flask, jsonify
+from marshmallow import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
 
@@ -50,7 +51,12 @@ def __unhandled_errors(e):
 
 def __handle_type_errors(e: TypeError):
     print(e)
-    return __error_response(message="Invalid value received. {}".format(str(e)), status_code=403)
+    return __error_response(message=f"Invalid value received. {str(e)}", status_code=403)
+
+
+def __db_marshmallow_validation_error(e: ValidationError):
+    err_key = list(e.messages.keys())[0]
+    return __error_response(message=f"{err_key} {e.messages[err_key][0]}", status_code=403)
 
 
 def __handle_value_errors(e: TypeError):
@@ -62,6 +68,7 @@ def __handle_value_errors(e: TypeError):
 def app_error_handlers(app: Flask):
     app.register_error_handler(CustomError, lambda e: __error_response(message=e.message, status_code=e.status_code))
     app.register_error_handler(SQLAlchemyError, __db_errors)
+    app.register_error_handler(ValidationError, __db_marshmallow_validation_error)
     app.register_error_handler(OperationalError, __db_errors)
     app.register_error_handler(TypeError, __handle_type_errors)
     app.register_error_handler(ValueError, __handle_value_errors)
