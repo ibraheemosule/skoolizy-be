@@ -1,4 +1,4 @@
-from flask import Response
+from flask import Response, request
 
 from configs import envs
 from .validations import teacher_validation
@@ -17,14 +17,14 @@ class Teachers:
         pass
 
     def signup(self, data: TTeacherPayload) -> Response:
-        teacher_validation(data, ['password'])
+        data = request.json
 
-        password = data.get('password')
+        # teacher_validation(data, ['password'])
 
-        if not password:
-            raise CustomError("No password provided", 403)
+        # password = data.get('password')
 
-        from .models import Teacher
+        # if not password:
+        #     raise CustomError("No password provided", 403)
 
         last_id = getattr(Teacher.query.order_by(Teacher.id.desc()).first(), 'get_id', lambda: 0)()
         tag = f'staff-{last_id + 1}'
@@ -51,8 +51,6 @@ class Teachers:
         )
 
         db.session.commit()
-
-        import os
 
         message = f"""
             Hi {data.get('first_name')},\n
