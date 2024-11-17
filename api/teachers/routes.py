@@ -13,14 +13,14 @@ def get_by_id_teachers(id: str):
 
 @teachers_bp.route("/teachers", methods=["GET"])
 def get_teachers():
-    return teachers.get()
+    return teachers.get_all()
 
 
-@teachers_bp.route("/teachers/<string:id>", methods=["DELETE"])
-def delete_teacher(id: str):
-    return teachers.delete(id)
+@teachers_bp.route("/teachers/<string:tag>", methods=["DELETE"])
+def delete_teacher(tag: str):
+    return teachers.delete(tag)
 
 
-@teachers_bp.route("/teachers/<string:id>", methods=["PUT"])
-def update_teacher(id: str):
-    return teachers.update(id)
+@teachers_bp.route("/teachers/<string:tag>", methods=["PUT"])
+def update_teacher(tag: str):
+    return teachers.update(tag)

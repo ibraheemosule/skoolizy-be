@@ -1,6 +1,8 @@
 from flask import Response, request
 from api.teachers.models import Teacher
-from configs import envs
+from api.teachers.controllers import Teachers
+from configs.envs import ACCESS_TOKEN_EXPIRES_MINUTES, EMAIL, FRONTEND_URL
+from configs.db import db
 from utils.auth import generate_otp, decode_token, generate_access_token, generate_tokens_and_response, verify_otp
 from utils.email_utils import is_email_valid, send_email
 from utils.auth.auth_typings import TUserAuth
@@ -15,31 +17,53 @@ class Auth:
     def signup(self) -> Response:
         data = request.json
 
+        if data.get('role') not in ('staff'):
+            raise CustomError("Invalid role provided")
+
+        tag: Union[str, None] = None
+
         if data.get('role') == 'staff':
-            from api.teachers.controllers import Teachers
-
             teachers = Teachers()
-            response, message = teachers.signup(data=data)
+            tag = teachers.create()
 
-            send_email(
-                subject="Account Created on Skoolizy",
-                message=default_html(message=message, title="Welcome to Skoolizy"),
-                recipients=[data.get('email')],
-            )
+        message = f"""
+        <p>Hi {data.get('first_name')},</p>
 
-            return response
+        <p>Your account has been successfully created!</p>
 
-        raise CustomError("Invalid role provided")
+        <strong>Your Tag is {tag}.</strong>
+
+        <p>Use it to <a href={FRONTEND_URL}/auth/login target="_blank">log in</a> and start exploring all that we offer.\n
+        If you have any questions, feel free to reach out to our <a href="mailto:{EMAIL}">support team</a>.</p>
+
+        <p>Thanks for joining us!</p>
+        """
+
+        send_email(
+            subject="Account Created on Skoolizy",
+            message=default_html(message=message, title="Welcome to Skoolizy"),
+            recipients=[data.get('email')],
+        )
+
+        return res(data={"message": "Sign up successful", "tag": tag})
 
     def confirm_signup(self) -> Response:
         data = request.json
         email = data.get("email")
+        tag: str = data.get('tag')
+
+        if email == None:
+            raise CustomError("No email provided")
+
+        if tag == None:
+            raise CustomError("No tag provided")
 
         verify = verify_otp(otp=data.get('otp'), recipient=email)
 
-        if verify:
-            from api.teachers.controllers import Teachers
+        if not verify:
+            raise CustomError("Unable to verify code", 403)
 
+        if tag.count('staff'):
             teachers = Teachers()
             return teachers.confirm_signup(email)
 
@@ -49,8 +73,6 @@ class Auth:
         data = request.json
         tag = data.get("tag")
         password = data.get("password")
-
-        from api.teachers.models import Teacher
 
         teacher: Teacher = Teacher.query.filter_by(tag=tag).first()
 
@@ -92,8 +114,6 @@ class Auth:
     def generate_reset_password_link(self, tag: str) -> Response:
         '''Generate a link that is sent to the user email for resetting password'''
 
-        from api.teachers.models import Teacher
-
         teacher: Teacher = Teacher.query.filter_by(tag=tag).first()
 
         if not teacher:
@@ -101,7 +121,7 @@ class Auth:
 
         token = generate_access_token(user_id={f"reset_{tag}": tag})
 
-        link = f"{envs.FRONTEND_URL}/auth/reset-password?token={token}"
+        link = f"{FRONTEND_URL}/auth/reset-password?token={token}"
 
         message = f"""A request has been made to reset your password.\n
         If this was initated by you, Please click this 
@@ -113,7 +133,7 @@ class Auth:
             recipients=[teacher.email],
         )
 
-        cache.setex(name=token, value="unused", time=envs.ACCESS_TOKEN_EXPIRES_MINUTES * 60)
+        cache.setex(name=token, value="unused", time=ACCESS_TOKEN_EXPIRES_MINUTES * 60)
 
         return res(data={"message": f"A reset password link has been sent to {tag} email"})
 
@@ -124,14 +144,14 @@ class Auth:
         token = data.get('token')
         new_password = data.get('new_password')
 
-        if cache.get(token) == 'used':
-            raise CustomError('Reset password link has been used!', 409)
+        if new_password == None:
+            raise CustomError('No new password payload provided')
 
-        if not cache.get(token):
+        if cache.get(token) == None:
             raise CustomError('Reset password link is invalid')
 
-        if not new_password:
-            raise CustomError('No new password payload provided')
+        if cache.get(token) == 'used':
+            raise CustomError('Reset password link has been used!', 409)
 
         from utils.helpers import is_password_valid
 
@@ -144,19 +164,13 @@ class Auth:
 
         tag = decoded_token[list(decoded_token.keys())[0]]
 
-        from api.teachers.models import Teacher
-
         teacher: Teacher = Teacher.query.filter_by(tag=tag).first()
         teacher.set_password(password=new_password)
 
-        from configs.db import db
-
         db.session.commit()
 
-        import os
-
         message = f"""Your account password has been reset successfully.\n
-        You have been logged out of all sessions. You can <a href={envs.FRONTEND_URL} target="_blank">Log in here</a>"""
+        You have been logged out of all sessions. You can <a href={FRONTEND_URL} target="_blank">Log in here</a>"""
 
         send_email(
             subject="Password reset notificaton",
@@ -164,6 +178,6 @@ class Auth:
             recipients=[teacher.email],
         )
 
-        cache.setex(name=token, value="used", time=envs.ACCESS_TOKEN_EXPIRES_MINUTES * 60)
+        cache.setex(name=token, value="used", time=ACCESS_TOKEN_EXPIRES_MINUTES * 60)
 
         return res(data={"message": "Password reset successfully"})

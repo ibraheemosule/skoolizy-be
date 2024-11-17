@@ -1,86 +1,82 @@
 from flask import Response, request
 
-from configs import envs
+from configs.envs import FRONTEND_URL, EMAIL
+from configs.db import db
 from .validations import teacher_validation
 from .data_types import TTeacherPayload
 from utils.error_handlers import CustomError
-from .models import Teacher
-from werkzeug.security import generate_password_hash
-from utils.auth import generate_tokens_and_response
+from .models import Teacher, TeacherSchema
+
 from utils.success_handlers import res
-from utils.helpers import get_date_and_time
 
 
 class Teachers:
-    def get(self) -> Response:
-        '''Will work on this later'''
-        pass
+    def get_all(self) -> Response:
+        '''Gets all the teachers'''
+        teacher = Teacher.query.all()
+        schema = TeacherSchema(many=True, only=["first_name", "middle_name", "last_name", "role", "tag"])
 
-    def signup(self, data: TTeacherPayload) -> Response:
+        return res(data={"message": "data retrieved successfully", "data": schema.dump(teacher)})
+
+    def create(self) -> Response:
+        """Sign up a user"""
         data = request.json
-
-        # teacher_validation(data, ['password'])
-
-        # password = data.get('password')
-
-        # if not password:
-        #     raise CustomError("No password provided", 403)
 
         last_id = getattr(Teacher.query.order_by(Teacher.id.desc()).first(), 'get_id', lambda: 0)()
         tag = f'staff-{last_id + 1}'
 
-        from configs.db import db
+        data["tag"] = tag
 
-        db.session.add(
-            Teacher(
-                first_name=data.get("first_name"),
-                last_name=data.get("last_name"),
-                middle_name=data.get("middle_name"),
-                gender=data.get("gender"),
-                date_of_birth=get_date_and_time(data.get("date_of_birth"))[0],
-                phone_number=data.get('phone_number'),
-                home_address=data.get('home_address'),
-                country=(data.get("country")),
-                state_of_origin=(data.get("state_of_origin")),
-                email=(data.get("email")),
-                tier=str(3),
-                tag=tag,
-                password_hash=generate_password_hash(data.get('password')),
-                role=data.get('role'),
-            )
-        )
+        schema = TeacherSchema()
+        validated_teacher = schema.load(data, session=Teacher)
+        db.session.add(validated_teacher)
+        db.session.commit()
+
+        return tag
+
+    def get_one(self, tag: str) -> Response:
+        '''Will work on this later'''
+
+        teacher = Teacher.query.filter_by(tag=tag).first()
+        if teacher == None:
+            raise CustomError(f"{tag} does not exist")
+
+        schema = TeacherSchema()
+        return res(data={"message": "data retrieved successfully", "data": schema.dump(teacher)})
+
+    def update(self, tag: str) -> Response:
+        '''Updates a teacher information'''
+
+        data = request.json
+
+        if len(data.keys()) == 0:
+            raise CustomError("No payload was sent")
+
+        schema = TeacherSchema()
+        schema.load(data, partial=True, session=Teacher)
+
+        teacher: Teacher = db.session.get(Teacher, tag)
+
+        immutables = ("state_of_origin", "date_of_birth")
+        for value in data.keys():
+            if value in immutables:
+                raise CustomError(f"Cannot modify {value}", 403)
+
+        for key, value in data.item():
+            if hasattr(teacher, key):
+                setattr(teacher, key, value)
 
         db.session.commit()
 
-        message = f"""
-            Hi {data.get('first_name')},\n
-            Your account has been successfully created!\n
-            <strong>Your Tag is {tag}.</strong>\n
-            Use it to <a href={envs.FRONTEND_URL}/auth/login target="_blank">log in<a> and start exploring all that we offer.\n
-            If you have any questions, feel free to reach out to our <a href="mailto:{envs.EMAIL}">support team</a>.
+        return res(data={"message": f"{teacher.tag} details with has been updated"})
 
-            Thanks for joining us!"""
+    def delete(self, tag: str) -> Response:
+        '''Deletes a teacher information'''
 
-        return res(data={"message": "Sign up successful", "tag": tag}), message
+        teacher = Teacher.query.filter_by(tag=tag).first()
 
-    def get_one(self, id: str) -> Response:
-        '''Will work on this later'''
-        pass
+        if teacher == None:
+            raise CustomError(f"{tag} does not exist")
 
-    def update(self, id: str) -> Response:
-        '''Will work on this later'''
-        pass
-
-    def delete(self, id: str) -> Response:
-        '''Will work on this later'''
-        pass
-
-    def confirm_signup(self, email: str) -> Response:
-        teacher: Teacher = Teacher.query.filter_by(email=email).first()
-        teacher.verified = True
-
-        from configs.db import db
-
-        db.session.commit()
-
-        return generate_tokens_and_response(user_id={"tag": teacher.tag})
+        db.session.delete(teacher)
+        return res(data={"message": f"{tag} has been deleted successfully"})

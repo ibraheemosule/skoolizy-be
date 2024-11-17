@@ -3,6 +3,7 @@ from flask import Response, request, jsonify
 from sqlalchemy import func
 
 from utils.email_utils import send_email
+from utils.get_html import default_html
 from utils.helpers import today_date
 from utils.success_handlers import res, res_paginated
 from .validations import announcements_validation
@@ -61,11 +62,11 @@ class Announcements:
             if to_date and from_date > to_date:
                 raise CustomError("From date should be an older than To date")
 
-            query = query.filter(Announcement.date_created.between(from_date, to_date or today_date()))
+            query = query.filter(Announcement.created_at.between(from_date, to_date or today_date()))
 
         return res_paginated(
             schema=AnnouncementSchema(many=True),
-            query=query.order_by(Announcement.date_created.desc()),
+            query=query.order_by(Announcement.created_at.desc()),
             per_page=per_page,
             page=page,
         )
@@ -76,15 +77,8 @@ class Announcements:
 
             announcement: Announcement = schema.load(data, session=db.session)
 
-            if announcement.event_start_date:
-                announcement.event_start_date = announcement.event_start_date.date()
-            if announcement.event_end_date:
-                announcement.event_end_date = announcement.event_end_date.date()
-
             db.session.add(announcement)
             db.session.commit()
-
-            from utils.get_html import default_html
 
             send_email(
                 subject="New Announcement From Skoolizy",
@@ -117,40 +111,46 @@ class Announcements:
 
         if announcement == None:
             raise CustomError(f"Announcement with id-{id} not found", 404)
+
         return res(data={"data": schema.dump(announcement)})
 
     def update(self, id: str) -> Response:
-        data: TAnnouncementPayload = request.json
+        data = request.json
+
+        if len(data.keys()) == 0:
+            raise CustomError("No payload was sent")
+
+        schema.load(data, partial=True, session=Announcement)
 
         announcement: Announcement = db.session.get(Announcement, id)
 
         if announcement is None:
             raise CustomError(f"Announcement with id-{id} not found", 404)
 
-        keys = request.json.keys()
-        for v in keys:
+        for v in data.keys():
             if v in ('announcement_type', "recipient", 'reminder'):
                 raise CustomError(f"Cannot modify {v}", 403)
 
-        data = {**announcement.to_dict(), **data}
-        data.pop('date_created')
-        data.pop('id')
-        announcements_validation(data)
-
-        announcement.title = data.get("title", announcement.title)
-        announcement.message = data.get("message", announcement.message)
-        announcement.event_start_date = data.get("event_start_date", announcement.event_start_date)
-        announcement.event_end_date = data.get("event_end_date", announcement.event_end_date)
-        announcement.event_time = data.get("event_time", announcement.event_time)
+        for key, value in data.items():
+            if hasattr(announcement, key):
+                setattr(announcement, key, value)
 
         db.session.commit()
+
+        send_email(
+            subject="(Updated) Announcement From Skoolizy",
+            recipients=["ibraheemsulay@gmail.com"],
+            message=default_html(title=data["title"], message=f"<p>Hello,</p>{data['message']}"),
+        )
 
         return res(data={"message": f"Announcement with id-{id} has been updated"})
 
     def delete(self, id: str) -> Response:
         announcement: Announcement = db.session.get(Announcement, id)
+
         if announcement is None:
             raise CustomError(f"Announcement with id-{id} not found", 404)
+
         if announcement.announcement_type == 'memo':
             raise CustomError(f"Cannot delete announcement with id-{id} because it is a memo", 403)
 

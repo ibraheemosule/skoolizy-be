@@ -19,11 +19,8 @@ class Announcement(db.Model):
     __tablename__ = "announcements"
 
     id = db.Column(Integer, primary_key=True, autoincrement=True)
-    recipient = db.Column(
-        Enum("all", "parents", "teachers", "students", name="recipient_enum"),
-        default="all",
-    )
-    date_created = db.Column(TIMESTAMP(timezone=True), default=func.current_timestamp())
+    recipient = db.Column(String(10))
+    created_at = db.Column(TIMESTAMP(timezone=True), default=func.current_timestamp())
     title = db.Column(String(100), nullable=False)
     announcement_type = db.Column(Enum("memo", "single_event", "multi_event", name="type_enum"), nullable=False)
     message = db.Column(String(1000), nullable=True)
@@ -38,15 +35,15 @@ class AnnouncementSchema(SQLAlchemyAutoSchema):
         model = Announcement
         load_instance = True
 
-    recipient = fields.String(validate=validate.OneOf(['all', 'parents', 'teachers', 'students']), default='all')
-    date_created = fields.DateTime()
+    recipient = fields.String(validate=validate.OneOf(['all', 'parents', 'teachers', 'students']), missing='all')
+    created_at = fields.DateTime()
     title = fields.String(validate=validate.Length(min=10, max=100), required=True)
     announcement_type = fields.String(validate=validate.OneOf(["memo", "single_event", "multi_event"]), required=True)
-    message = fields.String(validate=validate.Length(min=20, max=1000))
-    event_start_date = fields.Date()
-    event_end_date = fields.Date()
-    event_time = fields.Time()
-    reminder = fields.Int(validate=validate.OneOf([1, 2, 3, 4, 5, 6, 7]))
+    message = fields.String(validate=validate.Length(min=20, max=1000), allow_none=True)
+    event_start_date = fields.Date(allow_none=True)
+    event_end_date = fields.Date(allow_none=True)
+    event_time = fields.Time(allow_none=True)
+    reminder = fields.Int(validate=validate.OneOf([1, 2, 3, 4, 5, 6, 7]), allow_one=True)
 
     @pre_load
     def format_dates(self, data, **kwargs):

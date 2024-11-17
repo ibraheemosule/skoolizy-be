@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 from typing import Dict
 
@@ -6,7 +6,7 @@ from typing import Dict
 def has_special_char(s):
     pattern = r"[<>\'\";`$!&|\\(){}[\]^~#@/]"
 
-    if re.search(pattern, s):
+    if isinstance(s, str) and re.search(pattern, s):
         return True
     return False
 
@@ -29,12 +29,13 @@ def get_time(time: str):
     return datetime.strftime(time, "%H:%M:%S")
 
 
-def today_date():
-    return (
-        datetime.strptime(
-            str(datetime.today().date()),
-            "%Y-%m-%d",
-        )
-        + timedelta(days=1)
-        - timedelta(seconds=1)
-    )
+def today_date() -> datetime:
+    return datetime.combine(datetime.today().date(), datetime.max.time())
+
+
+def days_diff(date: datetime) -> datetime:
+    return (today_date() - date).days
+
+
+def years_diff(date: datetime) -> datetime:
+    return today_date().year - date.year
