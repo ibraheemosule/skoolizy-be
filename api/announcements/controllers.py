@@ -6,7 +6,6 @@ from utils.email_utils import send_email
 from utils.get_html import default_html
 from utils.helpers import today_date
 from utils.success_handlers import res, res_paginated
-from .validations import announcements_validation
 from .data_types import TAnnouncementPayload
 from utils.error_handlers import CustomError
 from .models import Announcement, AnnouncementSchema
@@ -71,40 +70,42 @@ class Announcements:
             page=page,
         )
 
-    def post(self) -> Response:
-        try:
-            data: TAnnouncementPayload = request.json
+    def post(self, user) -> Response:
+        data: TAnnouncementPayload = request.get_json()
 
-            announcement: Announcement = schema.load(data, session=db.session)
+        data["created_by"] = user['tag']
 
-            db.session.add(announcement)
-            db.session.commit()
+        if 'tag' not in user or not user['tag']:
+            raise CustomError("User identity trying to perform action is unknown", 401)
 
-            send_email(
-                subject="New Announcement From Skoolizy",
-                recipients=["ibraheemsulay@gmail.com"],
-                message=default_html(title=data["title"], message=f"<p>Hello,</p>{data['message']}"),
+        announcement: Announcement = schema.load(data, session=Announcement)
+
+        db.session.add(announcement)
+        db.session.commit()
+
+        send_email(
+            subject="New Announcement From Skoolizy",
+            recipients=["ibraheemsulay@gmail.com"],
+            message=default_html(title=data["title"], message=f"<p>Hello,</p>{data['message']}"),
+        )
+
+        if data.get("reminder"):
+            _id = schema.dump(Announcement.query.order_by(Announcement.id.desc()).first())['id']
+
+            from utils.email_utils import schedule_email
+
+            schedule_email(
+                **{
+                    "id": str(_id),
+                    "subject": 'New Announcement From Skoolizy',
+                    "message": default_html(title=data["title"], message=data["message"]),
+                    "recipient": ["ibraheemsulay@gmail.com"],
+                    "interval": data['reminder'],
+                    "event_start_date": data["event_start_date"],
+                }
             )
 
-            if data.get("reminder"):
-                _id = schema.dump(Announcement.query.order_by(Announcement.id.desc()).first())['id']
-
-                from utils.email_utils import schedule_email
-
-                schedule_email(
-                    **{
-                        "id": str(_id),
-                        "subject": 'New Announcement From Skoolizy',
-                        "message": default_html(title=data["title"], message=data["message"]),
-                        "recipient": ["ibraheemsulay@gmail.com"],
-                        "interval": data['reminder'],
-                        "event_start_date": data["event_start_date"],
-                    }
-                )
-
-            return res(data={"message": "Announcement has been sent"})
-        except CustomError as e:
-            return jsonify({"error": str(e)}), e.status_code
+        return res(data={"message": "Announcement has been sent"})
 
     def get_one(self, id: str) -> Response:
         announcement: Announcement = db.session.get(Announcement, id)
@@ -115,12 +116,12 @@ class Announcements:
         return res(data={"data": schema.dump(announcement)})
 
     def update(self, id: str) -> Response:
-        data = request.json
+        data = request.get_json()
 
         if len(data.keys()) == 0:
             raise CustomError("No payload was sent")
 
-        schema.load(data, partial=True, session=Announcement)
+        validated_announcement = schema.load(data, partial=True, session=db.session)
 
         announcement: Announcement = db.session.get(Announcement, id)
 
@@ -131,7 +132,7 @@ class Announcements:
             if v in ('announcement_type', "recipient", 'reminder'):
                 raise CustomError(f"Cannot modify {v}", 403)
 
-        for key, value in data.items():
+        for key, value in validated_announcement.items():
             if hasattr(announcement, key):
                 setattr(announcement, key, value)
 

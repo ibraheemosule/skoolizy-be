@@ -60,6 +60,7 @@ def __db_marshmallow_validation_error(e: ValidationError):
 
 
 def __handle_value_errors(e: TypeError):
+    print(str(e))
     if str(e).find('%Y-%m-%d'):
         return __error_response(message="Invalid date format: expected YYYY-MM-DD", status_code=403)
     return __error_response(message="Invalid value received. {}".format(str(e)), status_code=403)

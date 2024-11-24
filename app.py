@@ -1,5 +1,7 @@
 from flask import Flask
+from flask.cli import with_appcontext
 from flask_migrate import Migrate
+from sqlalchemy import text
 from api.announcements.routes import announcements_bp
 from api.teachers.routes import teachers_bp
 from api.auth.routes import auth_bp
@@ -13,6 +15,16 @@ app = Flask(__name__)
 
 CORS(app)
 app.config.from_object(config)
+
+
+@app.cli.command('drop-alembic-version')
+@with_appcontext
+def drop_alembic_version():
+    """Drops the alembic_version table"""
+    db.session.execute(text('DROP TABLE IF EXISTS alembic_version'))
+    db.session.commit()
+    print('alembic_version table dropped.')
+
 
 db.init_app(app)
 migrate = Migrate(app, db)

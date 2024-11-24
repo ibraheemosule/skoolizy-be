@@ -2,12 +2,12 @@ from flask import Response, request
 
 from configs.envs import FRONTEND_URL, EMAIL
 from configs.db import db
-from .validations import teacher_validation
-from .data_types import TTeacherPayload
 from utils.error_handlers import CustomError
 from .models import Teacher, TeacherSchema
 
 from utils.success_handlers import res
+
+schema = TeacherSchema(session=db.session)
 
 
 class Teachers:
@@ -22,17 +22,11 @@ class Teachers:
         """Sign up a user"""
         data = request.json
 
-        last_id = getattr(Teacher.query.order_by(Teacher.id.desc()).first(), 'get_id', lambda: 0)()
-        tag = f'staff-{last_id + 1}'
-
-        data["tag"] = tag
-
-        schema = TeacherSchema()
-        validated_teacher = schema.load(data, session=Teacher)
+        validated_teacher = schema.load(data)
         db.session.add(validated_teacher)
         db.session.commit()
 
-        return tag
+        return schema.dump(validated_teacher).get('tag')
 
     def get_one(self, tag: str) -> Response:
         '''Will work on this later'''
@@ -41,7 +35,6 @@ class Teachers:
         if teacher == None:
             raise CustomError(f"{tag} does not exist")
 
-        schema = TeacherSchema()
         return res(data={"message": "data retrieved successfully", "data": schema.dump(teacher)})
 
     def update(self, tag: str) -> Response:
@@ -52,23 +45,11 @@ class Teachers:
         if len(data.keys()) == 0:
             raise CustomError("No payload was sent")
 
-        schema = TeacherSchema()
-        schema.load(data, partial=True, session=Teacher)
+        validated_teacher = schema.load(data, partial=True)
 
-        teacher: Teacher = db.session.get(Teacher, tag)
+        Teacher.update(schema.dump(validated_teacher), tag)
 
-        immutables = ("state_of_origin", "date_of_birth")
-        for value in data.keys():
-            if value in immutables:
-                raise CustomError(f"Cannot modify {value}", 403)
-
-        for key, value in data.item():
-            if hasattr(teacher, key):
-                setattr(teacher, key, value)
-
-        db.session.commit()
-
-        return res(data={"message": f"{teacher.tag} details with has been updated"})
+        return res(data={"message": f"{tag} details with has been updated"})
 
     def delete(self, tag: str) -> Response:
         '''Deletes a teacher information'''

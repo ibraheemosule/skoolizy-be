@@ -18,6 +18,7 @@ test:
 
 # Reset the database migrations
 reset-migration:
+	flask drop-alembic-version
 	rm -rf migrations
 	flask db init
 	flask db migrate -m "Initial migration"

@@ -8,6 +8,7 @@ from .auth_typings import TUserAuth
 import jwt
 from utils.email_utils import send_email
 from utils.success_handlers import res
+from functools import wraps
 
 
 def generate_refresh_token(user_id: TUserAuth):
@@ -109,6 +110,7 @@ def verify_otp(*, otp: int, recipient: str):
 
 
 def protected_route(func):
+    @wraps(func)
     def checker(*args, **kwargs):
         if 'Authorization' not in request.headers:
             raise CustomError("Access token is missing", 401)

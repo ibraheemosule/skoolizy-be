@@ -19,8 +19,9 @@ def get_announcements(user):
 
 
 @announcements_bp.route("/announcements", methods=["POST"])
-def post_announcements():
-    return announcements.post()
+@protected_route
+def post_announcements(user):
+    return announcements.post(user)
 
 
 @announcements_bp.route("/announcements/<string:id>", methods=["DELETE"])

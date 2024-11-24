@@ -1,12 +1,5 @@
-from sqlalchemy import (
-    Enum,
-    String,
-    Time,
-    Date,
-    Integer,
-    TIMESTAMP,
-    func,
-)
+from sqlalchemy import Enum, String, Time, Date, Integer, TIMESTAMP, func, ForeignKey, orm
+from api.teachers.models import TeacherSchema
 from configs.db import db
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow import fields, pre_load, validate, validates_schema
@@ -14,11 +7,23 @@ from marshmallow import fields, pre_load, validate, validates_schema
 from utils.error_handlers import CustomError
 from utils.helpers import get_date_and_time
 
+from marshmallow import fields
+
+
+class Nested(fields.Nested):
+    """Nested field that inherits the session from its parent."""
+
+    def _deserialize(self, *args, **kwargs):
+        if hasattr(self.schema, "session"):
+            self.schema.session = db.session
+            self.schema.transient = self.root.transient
+        return super()._deserialize(*args, **kwargs)
+
 
 class Announcement(db.Model):
     __tablename__ = "announcements"
 
-    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    id = db.Column(Integer(), primary_key=True, autoincrement=True)
     recipient = db.Column(String(10))
     created_at = db.Column(TIMESTAMP(timezone=True), default=func.current_timestamp())
     title = db.Column(String(100), nullable=False)
@@ -28,6 +33,15 @@ class Announcement(db.Model):
     event_end_date = db.Column(Date, nullable=True)
     event_time = db.Column(Time, nullable=True)
     reminder = db.Column(Integer(), default=None)
+    created_by = db.Column(String(30), ForeignKey('teachers.tag'), nullable=False)
+
+    creator = db.relationship("Teacher")
+
+    @orm.validates("created_at", "id", "announcement_type", "created_by")
+    def set_once(self, key, value):
+        if getattr(self, key) is not None:
+            raise CustomError(f"{key} cannot be updated once set.")
+        return value
 
 
 class AnnouncementSchema(SQLAlchemyAutoSchema):
@@ -44,15 +58,22 @@ class AnnouncementSchema(SQLAlchemyAutoSchema):
     event_end_date = fields.Date(allow_none=True)
     event_time = fields.Time(allow_none=True)
     reminder = fields.Int(validate=validate.OneOf([1, 2, 3, 4, 5, 6, 7]), allow_one=True)
+    creator = fields.Nested(
+        TeacherSchema, only=["tag", "email", "first_name"], dump_only=True, attribute="creator", data_key="created_by"
+    )
+    created_by = fields.String(
+        required=True,
+        load_only=True,
+    )
 
     @pre_load
     def format_dates(self, data, **kwargs):
         try:
             if event_start_date := data.get('event_start_date'):
-                data["event_start_date"] = get_date_and_time(event_start_date)['date']
+                data["event_start_date"] = get_date_and_time(event_start_date)["date"]
 
             if event_end_date := data.get('event_end_date'):
-                data["event_end_date"] = get_date_and_time(event_end_date)['date']
+                data["event_end_date"] = get_date_and_time(event_end_date)["date"]
 
         except ValueError:
             raise CustomError("Invalid date format provided")

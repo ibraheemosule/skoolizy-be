@@ -102,7 +102,6 @@ class Auth:
 
     def refresh_token(self) -> Response:
         refresh_token = request.cookies.get('refresh_token')
-        print(request.cookies)
 
         if not refresh_token:
             raise CustomError("Token is missing")
