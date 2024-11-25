@@ -64,6 +64,7 @@ class Announcements:
             query = query.filter(Announcement.created_at.between(from_date, to_date or today_date()))
 
         return res_paginated(
+            list_type="Announcement",
             schema=AnnouncementSchema(many=True),
             query=query.order_by(Announcement.created_at.desc()),
             per_page=per_page,
@@ -105,7 +106,7 @@ class Announcements:
                 }
             )
 
-        return res(data={"message": "Announcement has been sent"})
+        return res(message="Announcement has been sent")
 
     def get_one(self, id: str) -> Response:
         announcement: Announcement = db.session.get(Announcement, id)
@@ -113,7 +114,7 @@ class Announcements:
         if announcement == None:
             raise CustomError(f"Announcement with id-{id} not found", 404)
 
-        return res(data={"data": schema.dump(announcement)})
+        return res(data=schema.dump(announcement), message="Announcement retrieved successfully")
 
     def update(self, id: str) -> Response:
         data = request.get_json()
@@ -144,7 +145,7 @@ class Announcements:
             message=default_html(title=data["title"], message=f"<p>Hello,</p>{data['message']}"),
         )
 
-        return res(data={"message": f"Announcement with id-{id} has been updated"})
+        return res(message=f"Announcement with id-{id} has been updated")
 
     def delete(self, id: str) -> Response:
         announcement: Announcement = db.session.get(Announcement, id)
@@ -161,7 +162,7 @@ class Announcements:
         db.session.delete(announcement)
         db.session.commit()
 
-        return res(data={"message": f"Announcement with id-{id} has been deleted"}, status_code=204)
+        return res(message=f"Announcement with id-{id} has been deleted", status_code=204)
 
     def stop_reminder(self, id: str):
         from utils import email_utils
@@ -169,8 +170,8 @@ class Announcements:
         email_utils.stop_scheduled_email(id)
 
         announcement: Announcement = db.session.get(Announcement, id)
-        announcement.reminder = None
+        announcementNaNpxinder = None
 
         db.session.commit()
 
-        return res(data={"message": f"Reminder email id-{id} has been stopped"}, status_code=202)
+        return res(message=f"Reminder email for announcement id-{id} has been stopped", status_code=202)

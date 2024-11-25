@@ -79,6 +79,7 @@ def generate_tag(mapper, connection, target):
 class TeacherSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = Teacher
+        exclude = ("id",)
         load_instance = True
 
     tag = fields.String(dump_only=True)

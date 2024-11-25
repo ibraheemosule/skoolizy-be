@@ -45,7 +45,7 @@ class Auth:
             recipients=[data.get('email')],
         )
 
-        return res(data={"message": "Sign up successful", "tag": tag})
+        return res(message="Sign up successful", data={"tag": tag})
 
     def confirm_signup(self) -> Response:
         data = request.json
@@ -96,7 +96,7 @@ class Auth:
 
             send_status = generate_otp(recipient=email, email_title="OTP from Skoolizy")
 
-            return res(data={"message": send_status})
+            return res(message=send_status)
 
         raise CustomError("Invalid email payload")
 
@@ -108,7 +108,9 @@ class Auth:
 
         decoded_token: Union[TUserAuth, str] = decode_token(token=refresh_token)
 
-        return res(data={"access_token": generate_access_token(user_id=decoded_token)})
+        return res(
+            message="Token refresh successful", data={"access_token": generate_access_token(user_id=decoded_token)}
+        )
 
     def generate_reset_password_link(self, tag: str) -> Response:
         '''Generate a link that is sent to the user email for resetting password'''
@@ -134,7 +136,7 @@ class Auth:
 
         cache.setex(name=token, value="unused", time=ACCESS_TOKEN_EXPIRES_MINUTES * 60)
 
-        return res(data={"message": f"A reset password link has been sent to {tag} email"})
+        return res(message=f"A reset password link has been sent to {tag} email")
 
     def create_new_password(self) -> Response:
         '''Creates a new password, if the link is valid and the password provided are valid'''
@@ -179,4 +181,4 @@ class Auth:
 
         cache.setex(name=token, value="used", time=ACCESS_TOKEN_EXPIRES_MINUTES * 60)
 
-        return res(data={"message": "Password reset successfully"})
+        return res(message="Password reset successfully")

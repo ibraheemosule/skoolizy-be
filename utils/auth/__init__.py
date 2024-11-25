@@ -56,6 +56,7 @@ def generate_tokens_and_response(user_id: TUserAuth, status_code=200):
     response = make_response(
         res(
             data={"tag": user_id.get("tag"), "access_token": generate_access_token(user_id=user_id)},
+            message="token generated",
             status_code=status_code,
         ),
     )
