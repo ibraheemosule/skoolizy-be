@@ -1,33 +1,12 @@
-from typing import Dict
-from sqlalchemy import TIMESTAMP, Enum, Sequence, String, Date, Integer, Boolean, func, orm, event, select, Index
-from configs.db import db
-from werkzeug.security import check_password_hash, generate_password_hash
-from configs.db.base_models.user_model import UserModel
 from utils.error_handlers import CustomError
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow import fields, pre_load, validate, validates_schema
 from utils.helpers import get_date_and_time, has_special_char, is_password_valid, years_diff
 
 
-class Teacher(UserModel):
-    __tablename__ = "teachers"
-    __tableargs__ = Index('teacher_idx_tag', "tag")
-
-
-@event.listens_for(Teacher, "before_insert")
-def generate_tag(mapper, connection, target):
-    """
-    Generates a tag based on the Teacher's id before insert.
-    """
-    last_id_query = select(db.func.max(Teacher.id))
-    last_id = connection.execute(last_id_query).scalar()
-    target.tag = f'staff-{(last_id or 0) + 1}'
-
-
-class TeacherSchema(SQLAlchemyAutoSchema):
+class UserSchema(SQLAlchemyAutoSchema):
     class Meta:
-        model = Teacher
-        exclude = ("id",)
+        exclude = (id,)
         load_instance = True
 
     tag = fields.String(dump_only=True)
@@ -40,7 +19,7 @@ class TeacherSchema(SQLAlchemyAutoSchema):
     state_of_origin = fields.Str(validate=validate.Length(min=2, max=50), required=True)
     phone_number = fields.Str(validate=validate.Length(min=8, max=15), required=True)
     home_address = fields.Str(validate=validate.Length(min=2, max=100), required=True)
-    email = fields.String(validate=validate.Email(), required=True, unique=True)
+    email = fields.String(validate=validate.Email(), required=True)
     tier = fields.Int(validate=validate.OneOf([1, 2, 3, 4, 5]))
     role = fields.Str(validate=validate.OneOf(['staff']), required=True)
     verified = fields.Bool()
@@ -49,17 +28,18 @@ class TeacherSchema(SQLAlchemyAutoSchema):
 
     @pre_load
     def format_date_of_birth(self, data, **kwargs):
+        """Format the date_of_birth field before loading the data"""
         if dob := data.get('date_of_birth'):
             try:
                 data["date_of_birth"] = get_date_and_time(dob)["date"]
             except ValueError:
                 raise CustomError('Invalid date of birth provided')
-
         return data
 
     @validates_schema
-    def validating_staff(self, data, **kwargs):
-        password = data.get('password')
+    def validate_schema(self, data, **kwargs):
+        """Custom validation logic for the schema"""
+
         if has_special_char(data.get('first_name')):
             raise CustomError("first_name contains invalid characters")
 
@@ -69,7 +49,8 @@ class TeacherSchema(SQLAlchemyAutoSchema):
         if has_special_char(data.get('last_name')):
             raise CustomError("last_name contains invalid characters")
 
-        if password and not is_password_valid(password=data.get('password')):
+        password = data.get('password')
+        if password and not is_password_valid(password=password):
             raise CustomError(
                 'Password must be a minimum of 8 characters long and must contain a capital letter, a small letter, a number and a symbol'
             )
