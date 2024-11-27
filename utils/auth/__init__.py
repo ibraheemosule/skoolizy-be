@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 from flask import make_response, request
 from configs import envs
 from utils.error_handlers import CustomError
-import os
 from configs.redis_client import cache
 from .auth_typings import TUserAuth
 import jwt
@@ -110,18 +109,31 @@ def verify_otp(*, otp: int, recipient: str):
         return False
 
 
-def protected_route(func):
-    @wraps(func)
-    def checker(*args, **kwargs):
-        if 'Authorization' not in request.headers:
-            raise CustomError("Access token is missing", 401)
+# def protected_route(func):
+#     @wraps(func)
+#     def checker(*args, **kwargs):
+#         if 'Authorization' not in request.headers:
+#             raise CustomError("Unauthorized", 401)
 
-        token = request.headers['Authorization'].split(' ')
+#         token = request.headers['Authorization'].split(' ')
 
-        if token[0] != 'Bearer' or not token[1]:
-            raise CustomError('Invalid token format provided')
+#         if token[0] != 'Bearer' or not token[1]:
+#             raise CustomError('Invalid token format provided')
+#         request.session_user =  decode_token(token=token[1])
 
-        kwargs["user"] = decode_token(token=token[1])
-        return func(*args, **kwargs)
+#         kwargs["session_user"] = decode_token(token=token[1])
+#         return func(*args, **kwargs)
 
-    return checker
+#     return checker
+
+
+def set_session():
+    if 'Authorization' not in request.headers:
+        raise CustomError("Unauthorized", 401)
+
+    token = request.headers['Authorization'].split(' ')
+
+    if token[0] != 'Bearer' or not token[1]:
+        raise CustomError('Invalid token format provided')
+
+    request.session_user = decode_token(token=token[1])

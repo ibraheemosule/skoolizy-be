@@ -77,12 +77,13 @@ class Announcements:
             page=page,
         )
 
-    def post(self, user) -> Response:
+    def post(self) -> Response:
         data: TAnnouncementPayload = request.get_json()
+        session_user = request.session_user
 
-        data["created_by"] = user['tag']
+        data["created_by"] = session_user['tag']
 
-        if 'tag' not in user or not user['tag']:
+        if 'tag' not in session_user or not session_user['tag']:
             raise CustomError("User identity trying to perform action is unknown", 401)
 
         announcement: Announcement = schema.load(data, session=Announcement)

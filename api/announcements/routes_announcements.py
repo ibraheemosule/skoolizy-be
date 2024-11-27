@@ -1,10 +1,15 @@
 from flask import Blueprint
 from .controllers_announcements import Announcements
-from utils.auth import protected_route
+from utils.auth import set_session
 
 announcements = Announcements()
 
 announcements_bp = Blueprint("announcements", __name__)
+
+
+@announcements_bp.before_request
+def protect_routes():
+    set_session()
 
 
 @announcements_bp.route("/announcements/<string:id>", methods=["GET"])
@@ -13,15 +18,13 @@ def get_by_id_announcements(id: str):
 
 
 @announcements_bp.route("/announcements", methods=["GET"])
-@protected_route
-def get_announcements(user):
+def get_announcements():
     return announcements.get()
 
 
 @announcements_bp.route("/announcements", methods=["POST"])
-@protected_route
-def post_announcements(user):
-    return announcements.post(user)
+def post_announcements(session_user):
+    return announcements.post(session_user)
 
 
 @announcements_bp.route("/announcements/<string:id>", methods=["DELETE"])

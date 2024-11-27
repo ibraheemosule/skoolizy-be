@@ -10,6 +10,7 @@ from configs import envs
 from configs.app_configs import config
 from configs.db import db
 from utils.error_handlers import app_error_handlers
+from api.account.routes_account import account_bp
 
 app = Flask(__name__)
 
@@ -33,6 +34,7 @@ app_error_handlers(app)
 app.register_blueprint(announcements_bp)
 app.register_blueprint(staffs_bp)
 app.register_blueprint(auth_bp)
+app.register_blueprint(account_bp)
 
 if __name__ == "__main__":
     app.run(host=envs.FLASK_HOST, debug=envs.FLASK_DEBUG, port=envs.FLASK_PORT)
