@@ -1,7 +1,8 @@
 from typing import TypedDict, Literal, Optional
+from utils.constants import groups
 
 
-class TTeacher(TypedDict):
+class TStaff(TypedDict):
     id: str
     date_created: str
     first_name: str
@@ -13,11 +14,11 @@ class TTeacher(TypedDict):
     state_of_origin: str
     email: str
     tier: Literal[1, 2, 3, 4, 5]
-    role: Literal['staff']
+    group: Literal["all", 'guardians', "staffs", "students"]
     tag: str
 
 
-class TTeacherPayload(TypedDict):
+class TStaffPayload(TypedDict):
     first_name: str
     last_name: str
     middle_name: Optional[str]
@@ -28,7 +29,7 @@ class TTeacherPayload(TypedDict):
     email: str
     phone_number: str
     home_address: str
-    role: Literal['staff']
+    group: Literal["all", 'guardians', "staffs", "students"]
 
 
 class TConfirmSignup(TypedDict):

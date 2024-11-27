@@ -1,5 +1,5 @@
 from flask import Blueprint
-from .controllers import Announcements
+from .controllers_announcements import Announcements
 from utils.auth import protected_route
 
 announcements = Announcements()

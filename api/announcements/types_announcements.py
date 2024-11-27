@@ -3,7 +3,7 @@ from typing import TypedDict, Literal, Optional
 
 class TAnnouncement(TypedDict):
     id: int
-    recipient: Literal["all", "parents", "teachers", "students"]
+    recipient: Literal["all", "parents", "parents", "students"]
     date_created: str
     title: str
     type: Literal["memo", "single_event", "multi_event"]

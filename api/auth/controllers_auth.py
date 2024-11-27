@@ -1,6 +1,6 @@
-from flask import Response, request
-from api.teachers.models import Teacher
-from api.teachers.controllers import Teachers
+from flask import Response, jsonify, request
+from api.staffs.controllers_staff import StaffControllers
+from api.staffs.model_staffs import Staff
 from configs.envs import ACCESS_TOKEN_EXPIRES_MINUTES, EMAIL, FRONTEND_URL
 from configs.db import db
 from utils.auth import generate_otp, decode_token, generate_access_token, generate_tokens_and_response, verify_otp
@@ -9,29 +9,32 @@ from utils.auth.auth_typings import TUserAuth
 from typing import Union
 from utils.error_handlers import CustomError
 from utils.success_handlers import res
+from utils.constants import groups
 from configs.redis_client import cache
 from utils.get_html import default_html
 
 
 class Auth:
     def signup(self) -> Response:
-        data = request.json
+        data = request.get_json()
 
-        if data.get('role') not in ('staff'):
-            raise CustomError("Invalid role provided")
+        group = data.get('group')
 
-        tag: Union[str, None] = None
+        if group not in groups:
+            raise CustomError("Invalid group provided")
 
-        if data.get('role') == 'staff':
-            teachers = Teachers()
-            tag = teachers.create()
+        data = None
+
+        if group == 'staffs':
+            staffs = StaffControllers()
+            data = staffs.create()
 
         message = f"""
         <p>Hi {data.get('first_name')},</p>
 
         <p>Your account has been successfully created!</p>
 
-        <strong>Your Tag is {tag}.</strong>
+        <strong>Your Tag is {data['tag']}.</strong>
 
         <p>Use it to <a href={FRONTEND_URL}/auth/login target="_blank">log in</a> and start exploring all that we offer.\n
         If you have any questions, feel free to reach out to our <a href="mailto:{EMAIL}">support team</a>.</p>
@@ -45,7 +48,7 @@ class Auth:
             recipients=[data.get('email')],
         )
 
-        return res(message="Sign up successful", data={"tag": tag})
+        return res(message="Sign up successful", data=data)
 
     def confirm_signup(self) -> Response:
         data = request.json
@@ -64,8 +67,8 @@ class Auth:
             raise CustomError("Unable to verify code", 403)
 
         if tag.count('staff'):
-            teachers = Teachers()
-            return teachers.confirm_signup(email)
+            staffs = StaffControllers()
+            return staffs.confirm_signup(email)
 
         raise CustomError("Unable to confirm signup!", 403)
 
@@ -74,24 +77,24 @@ class Auth:
         tag = data.get("tag")
         password = data.get("password")
 
-        teacher: Teacher = Teacher.query.filter_by(tag=tag).first()
+        staff: Staff = Staff.query.filter_by(tag=tag).first()
 
-        if not teacher:
+        if not staff:
             raise CustomError(f"Account with {tag} not found", 404)
 
-        if not teacher.check_password(password=password):
+        if not staff.check_password(password=password):
             raise CustomError("Password is incorrect")
 
-        return generate_tokens_and_response(user_id={"tag": teacher.tag})
+        return generate_tokens_and_response(user_id={"tag": staff.tag})
 
     def send_otp(self) -> Response:
         data = request.json
         email = data.get('email')
 
         if is_email_valid(email):
-            teacher: Teacher = Teacher.query.filter_by(email=email).first()
+            staff: Staff = Staff.query.filter_by(email=email).first()
 
-            if not teacher:
+            if not staff:
                 raise CustomError(f"Account with {tag} not found", 404)
 
             send_status = generate_otp(recipient=email, email_title="OTP from Skoolizy")
@@ -115,9 +118,9 @@ class Auth:
     def generate_reset_password_link(self, tag: str) -> Response:
         '''Generate a link that is sent to the user email for resetting password'''
 
-        teacher: Teacher = Teacher.query.filter_by(tag=tag).first()
+        staff: Staff = Staff.query.filter_by(tag=tag).first()
 
-        if not teacher:
+        if not staff:
             raise CustomError("No user with tag found")
 
         token = generate_access_token(user_id={f"reset_{tag}": tag})
@@ -131,7 +134,7 @@ class Auth:
         send_email(
             subject="Reset your password",
             message=default_html(message=message, title="Password Reset Link"),
-            recipients=[teacher.email],
+            recipients=[staff.email],
         )
 
         cache.setex(name=token, value="unused", time=ACCESS_TOKEN_EXPIRES_MINUTES * 60)
@@ -165,8 +168,8 @@ class Auth:
 
         tag = decoded_token[list(decoded_token.keys())[0]]
 
-        teacher: Teacher = Teacher.query.filter_by(tag=tag).first()
-        teacher.set_password(password=new_password)
+        staff: Staff = Staff.query.filter_by(tag=tag).first()
+        staff.set_password(password=new_password)
 
         db.session.commit()
 
@@ -176,7 +179,7 @@ class Auth:
         send_email(
             subject="Password reset notificaton",
             message=default_html(message=message, title="Password Reset Successful"),
-            recipients=[teacher.email],
+            recipients=[staff.email],
         )
 
         cache.setex(name=token, value="used", time=ACCESS_TOKEN_EXPIRES_MINUTES * 60)

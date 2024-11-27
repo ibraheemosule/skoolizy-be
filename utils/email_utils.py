@@ -12,15 +12,17 @@ email_schedules = {}
 
 
 def schedule_email(id, subject, message, recipient, interval, event_start_date):
-    job = schedule.every(int(interval)).minutes.do(
+    job = schedule.every(int(interval)).days.do(
         lambda: send_email(subject=subject, message=message, recipients=recipient)
     )
     email_schedules[id] = job
 
     def run_schedule():
-        while datetime.now() <= datetime.strptime(event_start_date, '%Y-%m-%dT%H:%M:%S.%fZ'):
+        while event_start_date >= datetime.now().date():
             schedule.run_pending()
-            time.sleep(1)
+            time.sleep(
+                12 * 60 * 60 * interval
+            )  # Runs every 12 hours on a 1 day interval, every 24 hours on a 2 day interval etc.
 
     # Run the scheduler in a separate thread
     scheduler_thread = threading.Thread(target=run_schedule)

@@ -44,12 +44,12 @@ GET_QUERY_BY_SEARCH_RETURN_NO_DATA = (
     "no_data",
 )
 GET_QUERY_BY_RECIPIENT_RETURN_DATA = (
-    "/announcements?recipient=teachers",
-    {**ANNOUNCEMENT_PAYLOAD, "recipient": "teachers"},
+    "/announcements?recipient=staffs",
+    {**ANNOUNCEMENT_PAYLOAD, "recipient": "staffs"},
     "data",
 )
 GET_QUERY_BY_RECIPIENT_RETURN_NO_DATA = (
-    "/announcements?recipient=teachers",
+    "/announcements?recipient=staffs",
     ANNOUNCEMENT_PAYLOAD,
     "no_data",
 )
@@ -85,7 +85,7 @@ POST_INVALID_TYPE_IN_PAYLOAD_403 = (
 POST_INVALID_RECIPIENT_IN_PAYLOAD_403 = (
     {**__MULTI_EVENT_PAYLOAD, "recipient": "invalid_type"},
     403,
-    {'error': 'recipient should be one of (all, parents, teachers, students)'},
+    {'error': 'recipient should be one of (all, parents, staffs, students)'},
 )
 
 POST_MULTI_EVENT_WITH_VALID_PAYLOAD_201 = (

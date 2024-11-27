@@ -2,9 +2,9 @@ from flask import Flask
 from flask.cli import with_appcontext
 from flask_migrate import Migrate
 from sqlalchemy import text
-from api.announcements.routes import announcements_bp
-from api.teachers.routes import teachers_bp
-from api.auth.routes import auth_bp
+from api.announcements.routes_announcements import announcements_bp
+from api.staffs.routes_staffs import staffs_bp
+from api.auth.routes_auth import auth_bp
 from flask_cors import CORS
 from configs import envs
 from configs.app_configs import config
@@ -31,7 +31,7 @@ migrate = Migrate(app, db)
 
 app_error_handlers(app)
 app.register_blueprint(announcements_bp)
-app.register_blueprint(teachers_bp)
+app.register_blueprint(staffs_bp)
 app.register_blueprint(auth_bp)
 
 if __name__ == "__main__":

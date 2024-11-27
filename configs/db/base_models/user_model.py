@@ -3,15 +3,18 @@ from sqlalchemy import TIMESTAMP, String, Boolean, func, Enum, Date, Integer
 from configs.db import db
 from werkzeug.security import check_password_hash, generate_password_hash
 from utils.error_handlers import CustomError
+from utils.constants import groups
 from sqlalchemy import orm
+
+from utils.helpers import field_update_fn
 
 
 class UserModel(db.Model):
     __abstract__ = True
 
-    id = db.Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    tag = db.Column(String(30), nullable=False, unique=True)
-    created_at = db.Column(TIMESTAMP(timezone=True), default=func.current_timestamp())
+    id = db.Column(Integer, primary_key=True, autoincrement=True, nullable=False, onupdate=None)
+    tag = db.Column(String(30), nullable=False, unique=True, onupdate=None)
+    created_at = db.Column(TIMESTAMP(timezone=True), default=func.current_timestamp(), onupdate=None)
     first_name = db.Column(String(50), nullable=False)
     middle_name = db.Column(String(50), nullable=True)
     last_name = db.Column(String(50), nullable=False)
@@ -23,7 +26,7 @@ class UserModel(db.Model):
     state_of_origin = db.Column(String(50), nullable=False)
     email = db.Column(String(50), nullable=False, unique=True)
     tier = db.Column(Integer, default=1)
-    role = db.Column(String(20), default='staff')
+    group = db.Column(Enum(*groups, name="user_group_enum"), nullable=False)
     verified = db.Column(Boolean, default=False)
     password = db.Column(String(255))
 
@@ -41,9 +44,7 @@ class UserModel(db.Model):
         for key, value in model.items():
             if value and hasattr(instance, key):
                 setattr(instance, key, value)
-
         db.session.commit()
-        return instance
 
     def check_password(self, password):
         """Check if the provided password matches the hashed password."""
@@ -62,7 +63,4 @@ class UserModel(db.Model):
 
     @orm.validates('country', 'verified', 'created_at', 'state_of_origin', 'gender', 'date_of_birth')
     def set_once(self, key, value):
-        """Ensure certain fields are set only once."""
-        if getattr(self, key) is not None:
-            raise CustomError(f"{key} cannot be updated once set.")
-        return value
+        return field_update_fn(self, key, value)
