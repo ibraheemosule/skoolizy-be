@@ -1,11 +1,13 @@
 from flask import Response, request
 from sqlalchemy import or_
 
+from api.staffs.types_staffs import TStaff
 from configs.envs import FRONTEND_URL, EMAIL
 from configs.db import db
 from utils.error_handlers import CustomError
 from utils.helpers import format_date_time, model_to_dict, parse_date, today_date
 from .schema_staff import StaffSchema
+from .constants_staffs import fields, private_fields
 from .model_staffs import Staff
 
 from utils.success_handlers import res, res_paginated
@@ -52,27 +54,43 @@ class StaffControllers:
         scoped_schema = StaffSchema(session=db.session, only=["tag", "email", "verified", "tier"])
         return scoped_schema.dump(validated_staff)
 
-    def get_one(self, tag: str) -> Response:
+    def get_one(self, query_tag: str = None, user_req: bool = False) -> Response:
         '''Will work on this later'''
+        tag = request.session_user['tag'] if user_req else query_tag
 
         staff = Staff.query.filter_by(tag=tag).first()
+
         if staff == None:
             raise CustomError(f"{tag} does not exist")
 
+        fields_to_send = [field for field in fields if field not in private_fields]
+
+        schema = StaffSchema(session=db.session, only=(None if user_req else [*fields_to_send]))
+
         return res(message="data retrieved successfully", data=schema.dump(staff))
 
-    def update(self, tag: str) -> Response:
+    def update(self, query_tag: str = None, user_req: bool = False) -> Response:
         '''Updates a staff information'''
 
-        data = request.json
+        data = request.get_json()
 
         if len(data.keys()) == 0:
             raise CustomError("No payload was sent")
+
+        session_user = request.session_user
+        tag = session_user['tag'] if user_req else query_tag
 
         staff = Staff.query.filter_by(tag=tag).first()
 
         staff_dict = {**model_to_dict(staff), **data}
         del staff_dict['tag']
+        if not user_req:
+            raise CustomError("Invalid request made to route", 403)
+
+        if query_tag != session_user['tag']:
+            for field in private_fields:
+                if field in data:
+                    raise CustomError(f"Only account owner can modify {field} field")
 
         validated_staff = schema.load(staff_dict)
 
@@ -80,13 +98,18 @@ class StaffControllers:
 
         return res(message=f"{tag} details with has been updated")
 
-    def delete(self, tag: str) -> Response:
+    def delete(self, query_tag: str, user_req: bool = False) -> Response:
         '''Deletes a Staff'''
+
+        tag = request.session_user['tag'] if user_req else query_tag
 
         staff = Staff.query.filter_by(tag=tag).first()
 
         if staff == None:
             raise CustomError(f"{tag} does not exist")
+
+        if not user_req:
+            raise CustomError("You are not authorized to delete this account")
 
         db.session.delete(staff)
         return res(message=f"{tag} has been deleted successfully")

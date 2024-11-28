@@ -112,7 +112,6 @@ def field_update_fn(self, key, value):
 
     if isinstance(new_value, date):
         new_value = new_value.isoformat()
-
     if prev_value is not None and prev_value != new_value:
         raise CustomError(f"{key} cannot be updated once set.")
     return value

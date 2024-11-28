@@ -32,6 +32,12 @@ class UserSchema(BaseSchema):
                 data["date_of_birth"] = format_date_time(dob)["date_str"]
             except ValueError:
                 raise CustomError('Invalid date of birth provided')
+
+        if created_at := data.get('created_at'):
+            try:
+                data["created_at"] = format_date_time(created_at)["datetime_str"]
+            except ValueError:
+                raise CustomError('Invalid date of birth provided')
         return data
 
     @validates_schema

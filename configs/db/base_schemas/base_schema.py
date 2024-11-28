@@ -4,7 +4,9 @@ from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
 class BaseSchema(SQLAlchemyAutoSchema):
     @pre_load
-    def remove_created_at(self, data, **kwargs):
+    def remove_internal_field(self, data, **kwargs):
         if 'created_at' in data:
             del data['created_at']
+        if 'created_by' in data:
+            del data['created_by']
         return data
