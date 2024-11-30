@@ -47,7 +47,6 @@ class Announcements:
             else:
                 raise CustomError("invalid recipient: expected (all, guardians or students)", 400)
         else:
-            print('else here', session_user['group'])
             query = query.filter(
                 or_(Announcement.recipient == session_user["group"], Announcement.recipient == 'general')
             )
@@ -86,11 +85,15 @@ class Announcements:
     def post(self) -> Response:
         data: TAnnouncementPayload = request.get_json()
         session_user = request.session_user
+        group = session_user.get('group')
 
         data["created_by"] = session_user['tag']
 
-        if 'tag' not in session_user or not session_user['tag']:
+        if not session_user.get('tag'):
             raise CustomError("User identity trying to perform action is unknown", 401)
+
+        if group != "staffs":
+            raise CustomError("You are not allowed to create an announcement")
 
         announcement: Announcement = schema.load(data, session=db.session)
 
