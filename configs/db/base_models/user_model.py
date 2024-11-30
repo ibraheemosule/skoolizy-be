@@ -63,4 +63,7 @@ class UserModel(db.Model):
 
     @orm.validates('country', 'verified', 'created_at', 'state_of_origin', 'gender', 'date_of_birth')
     def set_once(self, key, value):
+        if key == 'verified' and value and self.verified == False:
+            return value
+
         return field_update_fn(self, key, value)

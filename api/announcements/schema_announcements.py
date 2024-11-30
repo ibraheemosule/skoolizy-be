@@ -23,7 +23,7 @@ class AnnouncementSchema(BaseSchema):
         model = Announcement
         load_instance = True
 
-    recipient = fields.String(validate=validate.OneOf(['all', *groups]), missing='all')
+    recipient = fields.String(validate=validate.OneOf(['general', *groups]), missing='all')
     created_at = fields.DateTime(dump_only=True)
     title = fields.String(validate=validate.Length(min=10, max=100), required=True)
     announcement_type = fields.String(validate=validate.OneOf(["memo", "single_event", "multi_event"]), required=True)
@@ -69,6 +69,7 @@ class AnnouncementSchema(BaseSchema):
 
             if event_end_date:
                 raise CustomError("Event end date should be omitted for a memo")
+            return
 
         if event_start_date == None:
             raise CustomError(
@@ -81,7 +82,7 @@ class AnnouncementSchema(BaseSchema):
         if announcement_type == 'multi_event':
             if event_end_date == None:
                 raise CustomError("Event end date is required for multi days event")
-            if event_start_date > event_end_date:
+            if event_start_date >= event_end_date:
                 raise CustomError("event_start_date should be an earlier date than event_end_date")
 
         if announcement_type == 'single_event':

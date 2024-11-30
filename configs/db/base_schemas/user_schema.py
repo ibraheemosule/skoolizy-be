@@ -1,7 +1,7 @@
 from utils.email_utils import is_email_valid
 from utils.error_handlers import CustomError
 from marshmallow import fields, pre_load, validate, validates, validates_schema
-from utils.helpers import format_date_time, has_special_char, is_password_valid, years_diff
+from utils.helpers import format_date_time, has_special_char, is_password_valid
 from utils.constants import tiers, groups, genders
 from .base_schema import BaseSchema
 
@@ -9,7 +9,7 @@ from .base_schema import BaseSchema
 class UserSchema(BaseSchema):
     tag = fields.String(dump_only=True)
     first_name = fields.String(required=True, validate=[validate.Length(min=2, max=40)])
-    middle_name = fields.String(validate=validate.Length(min=2, max=40), allow_none=True, missing=None)
+    middle_name = fields.String(validate=lambda val: val and 2 <= len(val) <= 40, allow_none=True, missing=None)
     last_name = fields.String(required=True, validate=[validate.Length(min=2, max=40)])
     gender = fields.String(validate=validate.OneOf(*genders), required=True)
     date_of_birth = fields.Date(required=True)
@@ -58,9 +58,6 @@ class UserSchema(BaseSchema):
             raise CustomError(
                 'Password must be a minimum of 8 characters long and must contain a capital letter, a small letter, a number and a symbol'
             )
-
-        if years_diff(data.get("date_of_birth")) < 18:
-            raise CustomError("Date of birth should be at least 18 years ago")
 
     @validates("email")
     def validate_email(self, email: str):

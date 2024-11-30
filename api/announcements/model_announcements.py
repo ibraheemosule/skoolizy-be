@@ -10,7 +10,7 @@ class Announcement(db.Model):
     __tablename__ = "announcements"
 
     id = db.Column(Integer(), primary_key=True, autoincrement=True)
-    recipient = db.Column(Enum(*groups, "all"))
+    recipient = db.Column(Enum(*groups, "general"))
     created_at = db.Column(TIMESTAMP(timezone=True), default=func.current_timestamp(), onupdate=None)
     title = db.Column(String(100), nullable=False)
     announcement_type = db.Column(
@@ -21,7 +21,7 @@ class Announcement(db.Model):
     event_end_date = db.Column(Date, nullable=True)
     event_time = db.Column(Time, nullable=True)
     reminder = db.Column(Integer(), default=None, nullable=True)
-    created_by = db.Column(String(30), ForeignKey('staffs.tag'), nullable=False)
+    created_by = db.Column(String(30), ForeignKey('staffs.tag'), nullable=False, onupdate=None)
 
     creator = db.relationship("Staff")
 

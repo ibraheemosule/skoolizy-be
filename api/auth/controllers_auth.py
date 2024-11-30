@@ -1,4 +1,4 @@
-from flask import Response, jsonify, request
+from flask import Response, request
 from api.staffs.controllers_staff import StaffControllers
 from api.staffs.model_staffs import Staff
 from configs.envs import ACCESS_TOKEN_EXPIRES_MINUTES, EMAIL, FRONTEND_URL
@@ -16,25 +16,21 @@ from utils.get_html import default_html
 
 class Auth:
     def signup(self) -> Response:
-        data = request.get_json()
-
-        group = data.get('group')
+        group = request.get_json().get('group')
 
         if group not in groups:
             raise CustomError("Invalid group provided")
 
-        data = None
-
         if group == 'staffs':
             staffs = StaffControllers()
-            data = staffs.create()
+            user = staffs.create()
 
         message = f"""
-        <p>Hi {data.get('first_name')},</p>
+        <p>Hi {user.get('first_name')},</p>
 
         <p>Your account has been successfully created!</p>
 
-        <strong>Your Tag is {data['tag']}.</strong>
+        <strong>Your Tag is {user.get('tag')}.</strong>
 
         <p>Use it to <a href={FRONTEND_URL}/auth/login target="_blank">log in</a> and start exploring all that we offer.\n
         If you have any questions, feel free to reach out to our <a href="mailto:{EMAIL}">support team</a>.</p>
@@ -45,58 +41,84 @@ class Auth:
         send_email(
             subject="Account Created on Skoolizy",
             message=default_html(message=message, title="Welcome to Skoolizy"),
-            recipients=[data.get('email')],
+            recipients=[user.get('email')],
         )
 
-        return res(message="Sign up successful", data=data)
+        return res(
+            message="Sign up successful",
+            data={
+                "access_token": generate_access_token(user_id=user),
+                "verified": user['verified'],
+                "tag": user['tag'],
+                "group": user["group"],
+            },
+        )
 
     def confirm_signup(self) -> Response:
-        data = request.json
-        email = data.get("email")
-        tag: str = data.get('tag')
-
-        if email == None:
-            raise CustomError("No email provided")
+        session_user = request.session_user
+        tag: str = session_user.get('tag')
 
         if tag == None:
             raise CustomError("No tag provided")
 
-        verify = verify_otp(otp=data.get('otp'), recipient=email)
+        user = None
+
+        if tag.count('staff'):
+            user: Staff = Staff.query.filter_by(tag=tag).first()
+
+        if user == None:
+            raise CustomError("Account associated with tag-{tag} is not found")
+
+        if user.verified:
+            raise CustomError("Account with tag-{tag} is already verified")
+
+        verify = verify_otp(otp=request.json.get('otp'), recipient=user.email)
 
         if not verify:
             raise CustomError("Unable to verify code", 403)
 
-        if tag.count('staff'):
-            staffs = StaffControllers()
-            return staffs.confirm_signup(email)
+        user.verified = True
+        db.session.commit()
 
-        raise CustomError("Unable to confirm signup!", 403)
+        return res(message="Account verification successful")
 
     def signin(self) -> Response:
         data = request.json
         tag = data.get("tag")
         password = data.get("password")
 
-        staff: Staff = Staff.query.filter_by(tag=tag).first()
+        if not tag:
+            raise CustomError('Tag is required', 404)
 
-        if not staff:
-            raise CustomError(f"Account with {tag} not found", 404)
+        user = None
 
-        if not staff.check_password(password=password):
+        if tag.count("staff"):
+            user: Staff = Staff.query.filter_by(tag=tag).first()
+
+        if not user:
+            raise CustomError(f'Account with {tag} unknown', 404)
+
+        if not user.check_password(password=password):
             raise CustomError("Password is incorrect")
 
-        return generate_tokens_and_response(user_id={"tag": staff.tag})
+        response_data = {
+            "verified": user.verified,
+            "tag": user.tag,
+            "tier": user.tier,
+            "email": user.email,
+            "group": user.group,
+        }
+
+        return res(
+            message="Sign up successful",
+            data={"access_token": generate_access_token(user_id=response_data), **response_data},
+        )
 
     def send_otp(self) -> Response:
-        data = request.json
-        email = data.get('email')
+        session_user = request.session_user
+        email = session_user.get('email')
 
         if is_email_valid(email):
-            staff: Staff = Staff.query.filter_by(email=email).first()
-
-            if not staff:
-                raise CustomError(f"Account with {tag} not found", 404)
-
             send_status = generate_otp(recipient=email, email_title="OTP from Skoolizy")
 
             return res(message=send_status)
@@ -107,7 +129,7 @@ class Auth:
         refresh_token = request.cookies.get('refresh_token')
 
         if not refresh_token:
-            raise CustomError("Token is missing")
+            raise CustomError("Expired token")
 
         decoded_token: Union[TUserAuth, str] = decode_token(token=refresh_token)
 
@@ -169,7 +191,7 @@ class Auth:
         tag = decoded_token[list(decoded_token.keys())[0]]
 
         staff: Staff = Staff.query.filter_by(tag=tag).first()
-        staff.set_password(password=new_password)
+        staff.password = new_password
 
         db.session.commit()
 

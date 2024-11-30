@@ -1,9 +1,7 @@
-import os
 from flask import Flask, jsonify
 from marshmallow import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
-
-from configs import db
+from configs.db import db
 
 
 class CustomError(Exception):
@@ -42,9 +40,10 @@ def __db_errors(e: SQLAlchemyError):
 
         return jsonify({"error": "db error", "message": str(e)}), 500
     except Exception as rollback_exception:
-        # Handle rollback failure, if necessary
         print(f"Rollback failed: {rollback_exception}")
-        return jsonify({"error": "db error", "message": "Critical database error occurred"}), 500
+        return __error_response(
+            error_type="server error", message="Internal error occurred during rdb ollback", status_code=500
+        )
 
 
 def __unhandled_errors(e):

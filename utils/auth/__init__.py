@@ -7,7 +7,6 @@ from .auth_typings import TUserAuth
 import jwt
 from utils.email_utils import send_email
 from utils.success_handlers import res
-from functools import wraps
 
 
 def generate_refresh_token(user_id: TUserAuth):
@@ -54,7 +53,7 @@ def generate_tokens_and_response(user_id: TUserAuth, status_code=200):
 
     response = make_response(
         res(
-            data={"tag": user_id.get("tag"), "access_token": generate_access_token(user_id=user_id)},
+            data={**user_id, "access_token": generate_access_token(user_id=user_id)},
             message="token generated",
             status_code=status_code,
         ),
@@ -100,40 +99,40 @@ def verify_otp(*, otp: int, recipient: str):
 
     cached_otp = cache.get(recipient)
     if not cached_otp:
-        raise CustomError("OTP has expired, please request again", 403)
+        raise CustomError("Code has expired, please request again", 403)
+
+    if otp and cached_otp != otp:
+        raise CustomError("Code is incorrect", 403)
 
     if cached_otp == otp:
         cache.delete(recipient)
         return True
-    else:
-        return False
+
+    return False
 
 
-# def protected_route(func):
-#     @wraps(func)
-#     def checker(*args, **kwargs):
-#         if 'Authorization' not in request.headers:
-#             raise CustomError("Unauthorized", 401)
+def set_session_user(app):
+    def open_routes(route: str) -> bool:
+        if route in ('/auth/signin', '/auth/signup', '/auth/create-new-password', '/auth/refresh-token'):
+            return True
+        if route.count('send-reset-password-link/'):
+            return True
 
-#         token = request.headers['Authorization'].split(' ')
+    @app.before_request
+    def authenticate_request():
+        # Skip authentication for preflight requests
+        if request.method == "OPTIONS":
+            return
 
-#         if token[0] != 'Bearer' or not token[1]:
-#             raise CustomError('Invalid token format provided')
-#         request.session_user =  decode_token(token=token[1])
+        if open_routes(request.path):
+            return
 
-#         kwargs["session_user"] = decode_token(token=token[1])
-#         return func(*args, **kwargs)
+        if 'Authorization' not in request.headers:
+            raise CustomError("Unauthorized", 401)
 
-#     return checker
+        token = request.headers['Authorization'].split(' ')
 
+        if token[0] != 'Bearer' or len(token) < 2 or not token[1]:
+            raise CustomError("Invalid token format provided", 401)
 
-def set_session():
-    if 'Authorization' not in request.headers:
-        raise CustomError("Unauthorized", 401)
-
-    token = request.headers['Authorization'].split(' ')
-
-    if token[0] != 'Bearer' or not token[1]:
-        raise CustomError('Invalid token format provided')
-
-    request.session_user = decode_token(token=token[1])
+        request.session_user = decode_token(token=token[1])

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from flask import Response, request, jsonify
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from api.staffs.model_staffs import Staff
 from api.staffs.schema_staff import StaffSchema
@@ -23,6 +23,7 @@ staff_schema = StaffSchema(many=True, session=db.session)
 class Announcements:
     def get(self) -> Response:
         req: TAnnouncementPayload = request.args.get
+        session_user = request.session_user
 
         announcement_type = req(
             "announcement_type",
@@ -45,6 +46,11 @@ class Announcements:
                 query = query.filter(Announcement.recipient == recipient)
             else:
                 raise CustomError("invalid recipient: expected (all, guardians or students)", 400)
+        else:
+            print('else here', session_user['group'])
+            query = query.filter(
+                or_(Announcement.recipient == session_user["group"], Announcement.recipient == 'general')
+            )
 
         if announcement_type:
             if announcement_type in ("multi_event", "single_event", "memo"):
@@ -86,12 +92,15 @@ class Announcements:
         if 'tag' not in session_user or not session_user['tag']:
             raise CustomError("User identity trying to perform action is unknown", 401)
 
-        announcement: Announcement = schema.load(data, session=Announcement)
+        announcement: Announcement = schema.load(data, session=db.session)
 
-        if announcement.recipient not in ('staffs', 'guardians', 'students'):
+        if announcement.recipient not in ('general', 'staffs', 'guardians', 'students'):
             raise CustomError(message="Can not create announcement due to unknown recipient group payload")
 
         recipients = []
+
+        if announcement.recipient == 'general':
+            recipients = list(map(lambda arg: arg['email'], staff_schema.dump(Staff.query.all())) or [])
 
         if announcement.recipient == 'staffs':
             recipients = list(
@@ -129,7 +138,7 @@ class Announcements:
                 }
             )
 
-        return res(message="Announcement has been sent")
+        return res(message="Announcement has been sent", status_code=201)
 
     def get_one(self, id: str) -> Response:
         announcement: Announcement = db.session.get(Announcement, id)
