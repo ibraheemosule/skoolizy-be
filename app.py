@@ -11,6 +11,7 @@ from configs.db import db, drop_alembic_version
 from utils.auth import decode_token, set_session_user
 from utils.error_handlers import CustomError, app_error_handlers
 from api.account.routes_account import account_bp
+from api.guardians.routes_guardians import guardians_bp
 
 app = Flask(__name__)
 
@@ -56,6 +57,7 @@ app.register_blueprint(announcements_bp)
 app.register_blueprint(staffs_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(account_bp)
+app.register_blueprint(guardians_bp)
 
 if __name__ == "__main__":
     app.run(host=envs.FLASK_HOST, debug=envs.FLASK_DEBUG, port=envs.FLASK_PORT)

@@ -13,7 +13,7 @@ from .types_announcements import TAnnouncementPayload
 from utils.error_handlers import CustomError
 from .model_announcements import Announcement
 from .schema_announcements import AnnouncementSchema
-from .constants_announcements import immutable_announcement_fields
+from .constants_announcements import announcement_permission, get_recipients_email, immutable_announcement_fields
 from configs.db import db
 
 schema = AnnouncementSchema()
@@ -42,10 +42,15 @@ class Announcements:
             query = query.filter(Announcement.title.ilike(f"%{search}%"))
 
         if recipient:
-            if recipient in groups:
-                query = query.filter(Announcement.recipient == recipient)
-            else:
-                raise CustomError("invalid recipient: expected (all, guardians or students)", 400)
+            permission = announcement_permission(session_user)
+
+            if recipient not in (*groups, "general"):
+                raise CustomError("invalid recipient: expected (general, guardians, staffs or students)", 400)
+
+            if recipient not in permission:
+                raise CustomError(f"You are not authorized to view {recipient}", 401)
+
+            query = query.filter(Announcement.recipient == recipient)
         else:
             query = query.filter(
                 or_(Announcement.recipient == session_user["group"], Announcement.recipient == 'general')
@@ -89,31 +94,19 @@ class Announcements:
 
         data["created_by"] = session_user['tag']
 
-        if not session_user.get('tag'):
-            raise CustomError("User identity trying to perform action is unknown", 401)
-
         if group != "staffs":
             raise CustomError("You are not allowed to create an announcement")
 
         announcement: Announcement = schema.load(data, session=db.session)
 
-        if announcement.recipient not in ('general', 'staffs', 'guardians', 'students'):
-            raise CustomError(message="Can not create announcement due to unknown recipient group payload")
+        if announcement.recipient not in ('general', *groups):
+            raise CustomError(message="Can not create announcement to an unknown recipient group")
 
-        recipients = []
-
-        if announcement.recipient == 'general':
-            recipients = list(map(lambda arg: arg['email'], staff_schema.dump(Staff.query.all())) or [])
-
-        if announcement.recipient == 'staffs':
-            recipients = list(
-                map(lambda arg: arg['email'], staff_schema.dump(Staff.query.filter_by(group=announcement.recipient)))
-                or []
-            )
+        recipients = get_recipients_email(announcement)
 
         if len(recipients) == 0:
             raise CustomError(
-                message=f"Can not create announcement. No account present in {announcement.recipient} group."
+                message=f"Can not create announcement. No account associated with {announcement.recipient} group."
             )
 
         db.session.add(announcement)
@@ -153,9 +146,13 @@ class Announcements:
 
     def update(self, id: str) -> Response:
         data = request.get_json()
+        session_user = request.session_user
 
         if len(data.keys()) == 0:
             raise CustomError("No payload was sent")
+
+        if session_user["group"] != 'staffs':
+            raise CustomError(f"You are not authorized to perform this action", 401)
 
         announcement: Announcement = db.session.get(Announcement, id)
 
@@ -173,9 +170,11 @@ class Announcements:
 
         db.session.commit()
 
+        recipients = get_recipients_email(announcement)
+
         send_email(
             subject="(Updated) Announcement From Skoolizy",
-            recipients=["ibraheemsulay@gmail.com"],
+            recipients=recipients,
             message=default_html(
                 title=data.get("title", announcement.title),
                 message=f"<p>Hello,</p>{data.get('message', announcement.message)}",
@@ -185,6 +184,11 @@ class Announcements:
         return res(message=f"Announcement with id-{id} has been updated")
 
     def delete(self, id: str) -> Response:
+        session_user = request.session_user
+
+        if session_user["group"] != 'staffs':
+            raise CustomError(f"You are not authorized to perform this action", 401)
+
         announcement: Announcement = db.session.get(Announcement, id)
 
         if announcement is None:
@@ -194,10 +198,21 @@ class Announcements:
             raise CustomError(f"Cannot delete announcement with id-{id} because it is a memo", 403)
 
         if announcement.event_start_date <= datetime.today().date():
-            raise CustomError("Can't delete today's event or past event announcement", 403)
+            raise CustomError("You can only delete future announcements", 403)
 
         db.session.delete(announcement)
         db.session.commit()
+
+        recipients = get_recipients_email(announcement)
+
+        send_email(
+            subject="(Deleted) Announcement From Skoolizy",
+            recipients=recipients,
+            message=default_html(
+                title=announcement.title,
+                message=f"<p style='display: block;'>Hello,</p>{announcement.message}",
+            ),
+        )
 
         return res(message=f"Announcement with id-{id} has been deleted", status_code=204)
 
@@ -211,8 +226,10 @@ class Announcements:
 
         if announcement.reminder:
             email_utils.stop_scheduled_email(id)
+
             announcement.reminder = None
             db.session.commit()
+
             return res(message=f"Reminder email for announcement id-{id} has been stopped", status_code=202)
-        else:
-            return res(message=f"Announcement with id-{id} has no reminder")
+
+        return res(message=f"Announcement with id-{id} has no reminder")
