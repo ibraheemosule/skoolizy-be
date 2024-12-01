@@ -33,7 +33,11 @@ class AnnouncementSchema(BaseSchema):
     event_time = fields.Time(allow_none=True)
     reminder = fields.Int(validate=validate.OneOf([1, 2, 3, 4, 5, 6, 7]), missing=None)
     creator = fields.Nested(
-        StaffSchema, only=["tag", "email", "first_name"], dump_only=True, attribute="creator", data_key="created_by"
+        StaffSchema,
+        only=["tag", "first_name", "last_name", 'title'],
+        dump_only=True,
+        attribute="creator",
+        data_key="created_by",
     )
     created_by = fields.String(
         required=True,

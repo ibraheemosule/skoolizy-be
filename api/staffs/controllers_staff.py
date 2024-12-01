@@ -51,7 +51,9 @@ class StaffControllers:
         db.session.add(validated_staff)
         db.session.commit()
 
-        scoped_schema = StaffSchema(session=db.session, only=["tag", "email", "verified", "tier", "first_name"])
+        scoped_schema = StaffSchema(
+            session=db.session, only=["tag", "email", "verified", "tier", "first_name", "last_name", "group"]
+        )
         return scoped_schema.dump(validated_staff)
 
     def get_one(self, query_tag: str = None, user_req: bool = False) -> Response:

@@ -3,7 +3,7 @@ from api.staffs.controllers_staff import StaffControllers
 from api.staffs.model_staffs import Staff
 from configs.envs import ACCESS_TOKEN_EXPIRES_MINUTES, EMAIL, FRONTEND_URL
 from configs.db import db
-from utils.auth import generate_otp, decode_token, generate_access_token, generate_tokens_and_response, verify_otp
+from utils.auth import generate_otp, decode_token, generate_access_token, generate_tokens_and_response, verify_code
 from utils.email_utils import is_email_valid, send_email
 from utils.auth.auth_typings import TUserAuth
 from typing import Union
@@ -44,17 +44,17 @@ class Auth:
             recipients=[user.get('email')],
         )
 
-        return res(
-            message="Sign up successful",
-            data={
-                "access_token": generate_access_token(user_id=user),
-                "verified": user['verified'],
-                "tag": user['tag'],
-                "group": user["group"],
-            },
-        )
+        response_data = {
+            "access_token": generate_access_token(user_id=user),
+            "verified": user['verified'],
+            "tag": user['tag'],
+            "email": user['email'],
+            "group": user["group"],
+        }
 
-    def confirm_signup(self) -> Response:
+        return generate_tokens_and_response(action_text="Sign up", user_id=response_data)
+
+    def verify_account(self) -> Response:
         session_user = request.session_user
         tag: str = session_user.get('tag')
 
@@ -67,12 +67,12 @@ class Auth:
             user: Staff = Staff.query.filter_by(tag=tag).first()
 
         if user == None:
-            raise CustomError("Account associated with tag-{tag} is not found")
+            raise CustomError(f"Account associated with tag-{tag} is not found")
 
         if user.verified:
-            raise CustomError("Account with tag-{tag} is already verified")
+            raise CustomError(f"Account with tag-{tag} is already verified")
 
-        verify = verify_otp(otp=request.json.get('otp'), recipient=user.email)
+        verify = verify_code(code=request.json.get('code'), recipient=user.email)
 
         if not verify:
             raise CustomError("Unable to verify code", 403)
@@ -109,10 +109,7 @@ class Auth:
             "group": user.group,
         }
 
-        return res(
-            message="Sign up successful",
-            data={"access_token": generate_access_token(user_id=response_data), **response_data},
-        )
+        return generate_tokens_and_response(user_id=response_data)
 
     def send_otp(self) -> Response:
         session_user = request.session_user

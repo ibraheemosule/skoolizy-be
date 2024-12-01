@@ -11,7 +11,7 @@ class UserSchema(BaseSchema):
     first_name = fields.String(required=True, validate=[validate.Length(min=2, max=40)])
     middle_name = fields.String(validate=lambda val: val and 2 <= len(val) <= 40, allow_none=True, missing=None)
     last_name = fields.String(required=True, validate=[validate.Length(min=2, max=40)])
-    gender = fields.String(validate=validate.OneOf(*genders), required=True)
+    gender = fields.String(validate=validate.OneOf([*genders]), required=True)
     date_of_birth = fields.Date(required=True)
     country = fields.Str(validate=validate.Length(min=3, max=50), required=True)
     state_of_origin = fields.Str(validate=validate.Length(min=2, max=50), required=True)

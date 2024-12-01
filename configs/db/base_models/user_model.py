@@ -3,7 +3,7 @@ from sqlalchemy import TIMESTAMP, String, Boolean, func, Enum, Date, Integer
 from configs.db import db
 from werkzeug.security import check_password_hash, generate_password_hash
 from utils.error_handlers import CustomError
-from utils.constants import groups
+from utils.constants import groups, genders
 from sqlalchemy import orm
 
 from utils.helpers import field_update_fn
@@ -18,7 +18,7 @@ class UserModel(db.Model):
     first_name = db.Column(String(50), nullable=False)
     middle_name = db.Column(String(50), nullable=True)
     last_name = db.Column(String(50), nullable=False)
-    gender = db.Column(Enum('male', 'female', name='gender_enum'), nullable=False)
+    gender = db.Column(Enum(*genders, name='gender_enum'), nullable=False)
     date_of_birth = db.Column(Date, nullable=False)
     country = db.Column(String(50), nullable=False)
     state_of_origin = db.Column(String(50), nullable=False)

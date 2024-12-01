@@ -11,9 +11,9 @@ def signup():
     return auth.signup()
 
 
-@auth_bp.route('/auth/confirm-signup', methods=['PATCH'])
+@auth_bp.route('/auth/verify-account', methods=['PATCH'])
 def confirm_signup():
-    return auth.confirm_signup()
+    return auth.verify_account()
 
 
 @auth_bp.route('/auth/signin', methods=['POST'])
@@ -21,7 +21,7 @@ def signin():
     return auth.signin()
 
 
-@auth_bp.route("/auth/send-otp", methods=["POST"])
+@auth_bp.route("/auth/send-code", methods=["POST"])
 def send_otp():
     return auth.send_otp()
 

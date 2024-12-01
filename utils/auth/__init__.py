@@ -48,14 +48,16 @@ def decode_token(*, token, err_message="token"):
         raise CustomError(f"Invalid {err_message}")
 
 
-def generate_tokens_and_response(user_id: TUserAuth, status_code=200):
+def generate_tokens_and_response(
+    user_id: TUserAuth,
+    action_text="Sign in",
+):
     """Generate token and send json response"""
 
     response = make_response(
         res(
             data={**user_id, "access_token": generate_access_token(user_id=user_id)},
-            message="token generated",
-            status_code=status_code,
+            message=f"{action_text} successful!",
         ),
     )
 
@@ -69,7 +71,7 @@ def generate_otp(*, recipient: str, email_title: str):
     """Generate otp and send to email"""
 
     if cache.get(recipient):
-        return "Previous OTP sent is still valid"
+        return "Previous code sent is still valid. Check your mail inbox or spam folder"
 
     from random import random
     from math import ceil
@@ -91,20 +93,20 @@ def generate_otp(*, recipient: str, email_title: str):
     return f"OTP has been sent to {recipient}"
 
 
-def verify_otp(*, otp: int, recipient: str):
+def verify_code(*, code: int, recipient: str):
     """Verify the otp sent to email"""
 
-    if not otp:
-        raise CustomError("No OTP payload received", 403)
+    if not code:
+        raise CustomError("No code payload received", 403)
 
-    cached_otp = cache.get(recipient)
-    if not cached_otp:
+    cached_code = cache.get(recipient)
+    if not cached_code:
         raise CustomError("Code has expired, please request again", 403)
 
-    if otp and cached_otp != otp:
+    if cached_code != code:
         raise CustomError("Code is incorrect", 403)
 
-    if cached_otp == otp:
+    if cached_code == code:
         cache.delete(recipient)
         return True
 
