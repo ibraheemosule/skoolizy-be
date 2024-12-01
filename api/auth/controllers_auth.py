@@ -1,4 +1,6 @@
 from flask import Response, request
+from api.guardians.controllers_guardian import GuardianControllers
+from api.guardians.model_guardians import Guardian
 from api.staffs.controllers_staff import StaffControllers
 from api.staffs.model_staffs import Staff
 from configs.envs import ACCESS_TOKEN_EXPIRES_MINUTES, EMAIL, FRONTEND_URL
@@ -24,6 +26,10 @@ class Auth:
         if group == 'staffs':
             staffs = StaffControllers()
             user = staffs.create()
+
+        if group == "guardians":
+            guardians = GuardianControllers()
+            user = guardians.create()
 
         message = f"""
         <p>Hi {user.get('first_name')},</p>
@@ -66,6 +72,9 @@ class Auth:
         if tag.count('staff'):
             user: Staff = Staff.query.filter_by(tag=tag).first()
 
+        if tag.count('guardian'):
+            user: Guardian = Guardian.query.filter_by(tag=tag).first()
+
         if user == None:
             raise CustomError(f"Account associated with tag-{tag} is not found")
 
@@ -94,6 +103,9 @@ class Auth:
 
         if tag.count("staff"):
             user: Staff = Staff.query.filter_by(tag=tag).first()
+
+        if tag.count('guardian'):
+            user: Guardian = Guardian.query.filter_by(tag=tag).first()
 
         if not user:
             raise CustomError(f'Account with {tag} unknown', 404)
@@ -137,10 +149,16 @@ class Auth:
     def generate_reset_password_link(self, tag: str) -> Response:
         '''Generate a link that is sent to the user email for resetting password'''
 
-        staff: Staff = Staff.query.filter_by(tag=tag).first()
+        user = None
 
-        if not staff:
-            raise CustomError("No user with tag found")
+        if tag.count("staff"):
+            user: Staff = Staff.query.filter_by(tag=tag).first()
+
+        if tag.count('guardian'):
+            user: Guardian = Guardian.query.filter_by(tag=tag).first()
+
+        if not user:
+            raise CustomError("No account with tag found")
 
         token = generate_access_token(user_id={f"reset_{tag}": tag})
 
@@ -153,7 +171,7 @@ class Auth:
         send_email(
             subject="Reset your password",
             message=default_html(message=message, title="Password Reset Link"),
-            recipients=[staff.email],
+            recipients=[user.email],
         )
 
         cache.setex(name=token, value="unused", time=ACCESS_TOKEN_EXPIRES_MINUTES * 60)
@@ -187,9 +205,18 @@ class Auth:
 
         tag = decoded_token[list(decoded_token.keys())[0]]
 
-        staff: Staff = Staff.query.filter_by(tag=tag).first()
-        staff.password = new_password
+        user = None
 
+        if tag.count("staff"):
+            user: Staff = Staff.query.filter_by(tag=tag).first()
+
+        if tag.count('guardian'):
+            user: Guardian = Guardian.query.filter_by(tag=tag).first()
+
+        if not user:
+            raise CustomError(f'Account with {tag} unknown', 404)
+
+        user.password = new_password
         db.session.commit()
 
         message = f"""Your account password has been reset successfully.\n
@@ -198,7 +225,7 @@ class Auth:
         send_email(
             subject="Password reset notificaton",
             message=default_html(message=message, title="Password Reset Successful"),
-            recipients=[staff.email],
+            recipients=[user.email],
         )
 
         cache.setex(name=token, value="used", time=ACCESS_TOKEN_EXPIRES_MINUTES * 60)
