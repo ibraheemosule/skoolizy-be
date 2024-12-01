@@ -17,4 +17,5 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["python", "app.py"]
+# CMD ["python", "app.py"]
+CMD make reset-migration && python app.py
