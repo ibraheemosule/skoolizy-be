@@ -1,4 +1,4 @@
-from sqlalchemy import Enum, event, select, Index
+from sqlalchemy import Enum, String, event, select, Index
 from configs.db import db
 from configs.db.base_models.user_model import UserModel
 from utils.constants import user_titles
@@ -9,6 +9,7 @@ class Guardian(UserModel):
     __tableargs__ = Index('guardian_idx_tag', "tag")
 
     # Guardian specific fields
+    phone_number = db.Column(String(15), nullable=False, unique=True)
     title = db.Column(
         Enum(*user_titles, name="user_title"),
         nullable=False,

@@ -50,7 +50,7 @@ def send_email(*, subject: str, message: str, recipients: List[str]):
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         server.login(from_email, password)
 
-        for recipient in recipients:
+        for recipient in list(set(recipients)):
             msg = MIMEMultipart()
             msg['Subject'] = subject
             msg['From'] = from_email

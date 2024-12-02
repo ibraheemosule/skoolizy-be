@@ -92,23 +92,23 @@ class Auth:
         return res(message="Account verification successful")
 
     def signin(self) -> Response:
-        data = request.json
-        tag = data.get("tag")
+        data = request.get_json()
+        tag = data.get("tag", '')
+        phone_number = data.get("phone_number")
         password = data.get("password")
 
-        if not tag:
-            raise CustomError('Tag is required', 404)
+        if not (tag or phone_number):
+            raise CustomError('Identity is required to sign in', 402)
 
         user = None
 
         if tag.count("staff"):
             user: Staff = Staff.query.filter_by(tag=tag).first()
-
-        if tag.count('guardian'):
-            user: Guardian = Guardian.query.filter_by(tag=tag).first()
+        elif phone_number:
+            user: Guardian = Guardian.query.filter_by(phone_number=phone_number).first()
 
         if not user:
-            raise CustomError(f'Account with {tag} unknown', 404)
+            raise CustomError(f'Account with {tag or phone_number} unknown', 404)
 
         if not user.check_password(password=password):
             raise CustomError("Password is incorrect")
